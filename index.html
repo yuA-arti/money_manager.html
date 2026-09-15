@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>家計・積立・資金移動マネージャー Pro</title>
+<title>家計・積立・給与割り振りマネージャー Pro</title>
 <style>
   :root {
     --primary: #2563eb;
@@ -18,7 +18,7 @@
     --purple: #8b5cf6;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  body { background: var(--bg); color: var(--text); padding: 10px; max-width: 680px; margin: 0 auto; padding-bottom: 70px; }
+  body { background: var(--bg); color: var(--text); padding: 10px; max-width: 700px; margin: 0 auto; padding-bottom: 70px; }
 
   /* タブ */
   .tabs { display: flex; gap: 4px; margin-bottom: 12px; background: #e2e8f0; padding: 4px; border-radius: 10px; }
@@ -27,26 +27,32 @@
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
-  /* 共通 */
+  /* 共通カード・ボタン */
   .card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); padding: 14px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
   .card-title { font-size: 11px; color: #64748b; margin-bottom: 6px; font-weight: bold; }
   .btn { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: #fff; cursor: pointer; font-size: 12px; font-weight: 500; }
   .btn-primary { background: var(--primary); color: #fff; border: none; }
   .btn-sm { padding: 3px 8px; font-size: 11px; }
 
-  /* タグ */
+  /* タグバッジ */
   .flow-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
   .tag-bank { background: #dbeafe; color: #1e40af; }
   .tag-cash { background: #fef3c7; color: #92400e; }
   .tag-save { background: #d1fae5; color: #065f46; }
   .tag-chokin { background: #ede9fe; color: #5b21b6; }
 
-  /* 1. 給与日割り振り */
-  .flow-group-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px; margin-bottom: 10px; }
-  .flow-group-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 8px; }
-  .flow-sub-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 0 6px 20px; border-bottom: 1px dashed #f1f5f9; font-size: 12px; }
+  /* 1. 給与日割り振り（入金タイミングブロック） */
+  .income-section { background: #fff; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 14px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .income-header { background: #f1f5f9; padding: 10px 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
+  .income-meta-inputs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .income-summary-row { padding: 6px 12px; background: #faf5ff; display: flex; justify-content: space-between; font-size: 11.5px; font-weight: bold; border-top: 1px dashed var(--border); }
+
+  .flow-group-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin: 8px 10px; }
+  .flow-group-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; margin-bottom: 6px; }
+  .flow-group-header.checked { opacity: 0.5; text-decoration: line-through; }
+  .flow-sub-item { display: flex; align-items: center; justify-content: space-between; padding: 5px 0 5px 22px; border-bottom: 1px dashed #f8fafc; font-size: 12px; }
   .flow-sub-item.checked { opacity: 0.45; text-decoration: line-through; }
-  .amt-meta { font-size: 10px; color: #64748b; display: block; text-align: right; }
+  .amt-meta { font-size: 9.5px; color: #64748b; display: block; text-align: right; }
 
   /* 2. 積立カード */
   .saving-card { border-left: 4px solid var(--primary); margin-bottom: 8px; }
@@ -81,33 +87,22 @@
 <body>
 
 <div class="tabs">
-  <button class="tab-btn active" onclick="switchTab('flow')">📋 給与割り振り</button>
+  <button class="tab-btn active" onclick="switchTab('flow')">📋 給与・手当割り振り</button>
   <button class="tab-btn" onclick="switchTab('savings')">🏦 積立通帳</button>
   <button class="tab-btn" onclick="switchTab('budget')">📊 家計集計 & 推移</button>
 </div>
 
-<!-- 1. 給与割り振り（小項目チェックリスト＆基本額/今回額） -->
+<!-- 1. 給与割り振り（入金タイミングごとにブロック化） -->
 <div id="tab-flow" class="tab-content active">
-  <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-    <div>
-      <div class="card-title">今月の給与・入金総額</div>
-      <input type="number" id="flowIncomeInput" class="b-input" style="width:115px; font-size:15px; font-weight:bold;" value="230000" onchange="renderFlows()"> 円
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+    <span class="card-title" style="margin:0;">入金タイミングごとの資金移動・袋分け</span>
+    <div style="display:flex; gap:6px;">
+      <button class="btn btn-sm" onclick="resetAllFlowChecks()">全チェック解除</button>
+      <button class="btn btn-sm btn-primary" onclick="openAddIncomeModal()">＋ 入金枠を追加</button>
     </div>
-    <button class="btn btn-sm" onclick="resetFlowChecks()">未済にリセット</button>
   </div>
 
-  <div class="card">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-      <span class="card-title">割り振り・内訳チェックリスト</span>
-      <button class="btn btn-sm btn-primary" onclick="openAddGroupModal()">＋ 親項目を追加</button>
-    </div>
-    <div id="flowGroupsContainer"></div>
-  </div>
-
-  <div class="card" style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold;">
-    <span>今回割当計: <span id="flowAllocSum">0</span> 円</span>
-    <span>手元残余: <span id="flowRemainSum" style="color:var(--primary);">0</span> 円</span>
-  </div>
+  <div id="incomeSectionsContainer"></div>
 </div>
 
 <!-- 2. 積立通帳マネージャー（日付指定つき入出金） -->
@@ -146,7 +141,6 @@
     <div id="budgetCategoryList"></div>
   </div>
 
-  <!-- 月別推移比較テーブル -->
   <div class="card">
     <div class="card-title">過去月の支出推移比較 (直近3ヶ月)</div>
     <div style="overflow-x:auto;">
@@ -155,13 +149,32 @@
   </div>
 </div>
 
-<!-- モーダル: 割り振り親項目追加 -->
+<!-- モーダル: 入金枠（タイミング）の追加 -->
+<div class="modal" id="incomeModal">
+  <div class="modal-content">
+    <div style="font-weight:bold; margin-bottom:10px;">入金枠の追加（給与・手当）</div>
+    <div class="form-group">
+      <label class="form-label">入金の名称・日付</label>
+      <input type="text" id="newIncTitle" class="form-input" placeholder="例: 9/15 メークス給与入金">
+    </div>
+    <div class="form-group">
+      <label class="form-label">入金額 (円)</label>
+      <input type="number" id="newIncAmount" class="form-input" placeholder="例: 130000">
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:6px;">
+      <button class="btn" onclick="closeModal('incomeModal')">閉じる</button>
+      <button class="btn btn-primary" onclick="saveNewIncomeSection()">追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- モーダル: 親項目（大項目）追加 -->
 <div class="modal" id="groupModal">
   <div class="modal-content">
-    <div style="font-weight:bold; margin-bottom:10px;">親項目の追加</div>
+    <div style="font-weight:bold; margin-bottom:10px;">親項目（口座・袋名）の追加</div>
     <div class="form-group">
-      <label class="form-label">親項目名（振込先銀行や袋分け名）</label>
-      <input type="text" id="groupName" class="form-input" placeholder="例: 鹿児島銀行、やりくり現金袋">
+      <label class="form-label">親項目名（大項目）</label>
+      <input type="text" id="groupName" class="form-input" placeholder="例: ドコモ銀行、鹿児島銀行、生活費袋">
     </div>
     <div class="form-group">
       <label class="form-label">種別</label>
@@ -185,14 +198,14 @@
     <div style="font-weight:bold; margin-bottom:6px;" id="subModalTitle">小項目の追加</div>
     <div class="form-group">
       <label class="form-label">小項目名（目的・内訳）</label>
-      <input type="text" id="subName" class="form-input" placeholder="例: 修学旅行積立、電気代、住宅ローン">
+      <input type="text" id="subName" class="form-input" placeholder="例: 子供貯金、修学旅行積立、生活費">
     </div>
     <div class="form-group">
       <label class="form-label">通常・基本の金額 (円)</label>
       <input type="number" id="subBaseAmt" class="form-input" placeholder="例: 3000">
     </div>
     <div class="form-group">
-      <label class="form-label">今月の金額 (円) ※通常と同じなら同額を入力</label>
+      <label class="form-label">今月の金額 (円) ※通常と同額なら同じ額</label>
       <input type="number" id="subCurrAmt" class="form-input" placeholder="例: 1000">
     </div>
     <div style="display:flex; justify-content:flex-end; gap:6px;">
@@ -202,7 +215,7 @@
   </div>
 </div>
 
-<!-- モーダル: 積立入出金（日付指定機能付き） -->
+<!-- モーダル: 積立入出金 -->
 <div class="modal" id="txModal">
   <div class="modal-content">
     <div style="font-weight:bold; margin-bottom:4px;" id="txTitle">入出金記録</div>
@@ -214,7 +227,7 @@
     <div class="form-group">
       <label class="form-label">種別</label>
       <select id="txType" class="form-input">
-        <option value="withdraw">− 出金・取崩し（支払い・ピンチ補填など）</option>
+        <option value="withdraw">− 出金・取崩し（支払い・補填など）</option>
         <option value="deposit">＋ 入金（月々の積立など）</option>
       </select>
     </div>
@@ -268,39 +281,65 @@
     { id: 'c11', name: '特別費', budget: 10000, actual: 0 }
   ];
 
-  let currentBudgets = JSON.parse(localStorage.getItem('app_categories_v2') || JSON.stringify(DEFAULT_CATEGORIES));
-  let budgetHistory = JSON.parse(localStorage.getItem('app_budget_history') || '{}');
+  let currentBudgets = JSON.parse(localStorage.getItem('app_categories_v3') || JSON.stringify(DEFAULT_CATEGORIES));
+  let budgetHistory = JSON.parse(localStorage.getItem('app_budget_history_v3') || '{}');
 
-  let flowGroups = JSON.parse(localStorage.getItem('app_flow_groups_v2') || JSON.stringify([
+  // 入金タイミングごとのデータ構造
+  let incomeSections = JSON.parse(localStorage.getItem('app_income_sections_v3') || JSON.stringify([
     {
-      id: 1, name: "鹿児島銀行 (固定費・教育口座)", type: "bank",
-      subItems: [
-        { id: 101, name: "住宅ローン返済", baseAmt: 65000, currAmt: 65000, checked: false },
-        { id: 102, name: "修学旅行積立", baseAmt: 3000, currAmt: 1000, checked: false }
+      id: 1,
+      title: "9/15 メークス給与入金",
+      amount: 131480,
+      groups: [
+        {
+          id: 101,
+          name: "ドコモ銀行",
+          type: "bank",
+          checked: false,
+          subItems: [
+            { id: 1001, name: "ドコモ銀行へ入金", baseAmt: 30000, currAmt: 30000, checked: false },
+            { id: 1002, name: "目的別口座: 子供貯金振替", baseAmt: 5000, currAmt: 5000, checked: false }
+          ]
+        },
+        {
+          id: 102,
+          name: "鹿児島銀行",
+          type: "bank",
+          checked: false,
+          subItems: [
+            { id: 1003, name: "住宅ローン返済", baseAmt: 65000, currAmt: 65000, checked: false },
+            { id: 1004, name: "修学旅行積立", baseAmt: 3000, currAmt: 1000, checked: false }
+          ]
+        }
       ]
     },
     {
-      id: 2, name: "やりくり現金 (袋分け)", type: "cash",
-      subItems: [
-        { id: 201, name: "食費・日用品 現金袋", baseAmt: 45000, currAmt: 45000, checked: false },
-        { id: 202, name: "ネコ・推活 現金袋", baseAmt: 20000, currAmt: 20000, checked: false }
-      ]
-    },
-    {
-      id: 3, name: "ゆうちょ定期 (目的別貯金)", type: "chokin",
-      subItems: [
-        { id: 301, name: "生活防衛貯金", baseAmt: 10000, currAmt: 5000, checked: false }
+      id: 2,
+      title: "9/18 はま寿司給与入金",
+      amount: 52000,
+      groups: [
+        {
+          id: 201,
+          name: "生活費 現金袋分け",
+          type: "cash",
+          checked: false,
+          subItems: [
+            { id: 2001, name: "食費・日用品現金", baseAmt: 35000, currAmt: 35000, checked: false },
+            { id: 2002, name: "予備・ガソリン現金", baseAmt: 15000, currAmt: 15000, checked: false }
+          ]
+        }
       ]
     }
   ]));
 
-  let savings = JSON.parse(localStorage.getItem('app_savings_v2') || JSON.stringify([
+  let savings = JSON.parse(localStorage.getItem('app_savings_v3') || JSON.stringify([
     { id: 1, name: "住宅ローンボーナス払い積立", balance: 60000, logs: [] },
     { id: 2, name: "車検・自動車税積立", balance: 30000, logs: [] },
     { id: 3, name: "予備費・生活防衛", balance: 25000, logs: [] }
   ]));
 
-  let activeGroupIdForSub = null;
+  let targetIncomeIdForGroup = null;
+  let targetGroupIdForSub = null;
   let selectedSavId = null;
 
   function init() {
@@ -309,7 +348,7 @@
     document.getElementById('budgetMonthPicker').value = ym;
     document.getElementById('txDate').value = today.toISOString().slice(0, 10);
 
-    renderFlows();
+    renderFlowSections();
     renderSavings();
     renderBudgets();
     renderHistoryTable();
@@ -323,113 +362,185 @@
     document.getElementById(`tab-${t}`).classList.add('active');
   }
 
-  // ---------------- 1. 給与割り振り（小項目・基本額/今回額） ----------------
-  function renderFlows() {
-    const box = document.getElementById('flowGroupsContainer');
-    box.innerHTML = '';
-    let totalAlloc = 0;
+  // ---------------- 1. 給与割り振り（入金タイミングごとのブロックレンダリング） ----------------
+  function renderFlowSections() {
+    const container = document.getElementById('incomeSectionsContainer');
+    container.innerHTML = '';
 
-    flowGroups.forEach((grp, gIdx) => {
-      let groupTotal = 0;
-      grp.subItems.forEach(s => groupTotal += s.currAmt);
-      totalAlloc += groupTotal;
+    incomeSections.forEach((sec, sIdx) => {
+      let secAlloc = 0;
+      sec.groups.forEach(g => {
+        g.subItems.forEach(item => secAlloc += item.currAmt);
+      });
+      const secRem = sec.amount - secAlloc;
 
-      const tagMap = {
-        bank: ['口座振替', 'tag-bank'],
-        cash: ['袋分け現金', 'tag-cash'],
-        save: ['積立入金', 'tag-save'],
-        chokin: ['貯金', 'tag-chokin']
-      };
-      const [tagText, tagClass] = tagMap[grp.type] || ['移動', 'tag-bank'];
+      const secEl = document.createElement('div');
+      secEl.className = 'income-section';
 
-      const grpCard = document.createElement('div');
-      grpCard.className = 'flow-group-card';
-      
-      let subsHtml = '';
-      grp.subItems.forEach((sub, sIdx) => {
-        subsHtml += `
-          <div class="flow-sub-item ${sub.checked ? 'checked' : ''}">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <input type="checkbox" ${sub.checked ? 'checked' : ''} onchange="toggleSubCheck(${gIdx}, ${sIdx})" style="width:16px;height:16px;">
-              <span>${sub.name}</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <div>
-                <span class="amt-meta">基本: ${sub.baseAmt.toLocaleString()} 円</span>
-                <input type="number" class="b-input" style="width:85px; font-weight:bold;" value="${sub.currAmt}" onchange="updateSubCurrAmt(${gIdx}, ${sIdx}, this.value)">
+      let groupsHtml = '';
+      sec.groups.forEach((grp, gIdx) => {
+        let grpTotal = 0;
+        grp.subItems.forEach(sub => grpTotal += sub.currAmt);
+
+        const tagMap = {
+          bank: ['口座振替', 'tag-bank'],
+          cash: ['袋分け現金', 'tag-cash'],
+          save: ['積立入金', 'tag-save'],
+          chokin: ['貯金', 'tag-chokin']
+        };
+        const [tagText, tagClass] = tagMap[grp.type] || ['移動', 'tag-bank'];
+
+        let subsHtml = '';
+        grp.subItems.forEach((sub, subIdx) => {
+          subsHtml += `
+            <div class="flow-sub-item ${sub.checked ? 'checked' : ''}">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" ${sub.checked ? 'checked' : ''} onchange="toggleSubCheck(${sIdx}, ${gIdx}, ${subIdx})" style="width:16px;height:16px;">
+                <span>${sub.name}</span>
               </div>
-              <button class="btn btn-sm" style="border:none; color:#94a3b8;" onclick="deleteSubItem(${gIdx}, ${sIdx})">×</button>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div>
+                  <span class="amt-meta">基本: ${sub.baseAmt.toLocaleString()} 円</span>
+                  <input type="number" class="b-input" style="width:85px; font-weight:bold;" value="${sub.currAmt}" onchange="updateSubCurrAmt(${sIdx}, ${gIdx}, ${subIdx}, this.value)">
+                </div>
+                <button class="btn btn-sm" style="border:none; color:#94a3b8;" onclick="deleteSubItem(${sIdx}, ${gIdx}, ${subIdx})">×</button>
+              </div>
+            </div>
+          `;
+        });
+
+        groupsHtml += `
+          <div class="flow-group-card">
+            <div class="flow-group-header ${grp.checked ? 'checked' : ''}">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" ${grp.checked ? 'checked' : ''} onchange="toggleGroupCheck(${sIdx}, ${gIdx})" style="width:18px;height:18px;">
+                <span class="flow-tag ${tagClass}">${tagText}</span>
+                <span style="font-size:13px; font-weight:bold;">${grp.name}</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:12px; font-weight:bold; color:var(--primary);">${grpTotal.toLocaleString()} 円</span>
+                <button class="btn btn-sm" style="border:none; color:#94a3b8;" onclick="deleteGroup(${sIdx}, ${gIdx})">×</button>
+              </div>
+            </div>
+            ${subsHtml}
+            <div style="text-align:right; margin-top:6px;">
+              <button class="btn btn-sm" onclick="openAddSubModal(${sec.id}, ${grp.id})">＋ 小項目を追加</button>
             </div>
           </div>
         `;
       });
 
-      grpCard.innerHTML = `
-        <div class="flow-group-header">
-          <div>
-            <span class="flow-tag ${tagClass}">${tagText}</span>
-            <span style="font-size:13px; font-weight:bold; margin-left:4px;">${grp.name}</span>
+      secEl.innerHTML = `
+        <div class="income-header">
+          <div class="income-meta-inputs">
+            <input type="text" value="${sec.title}" class="b-input" style="width:170px; text-align:left; font-weight:bold;" onchange="updateIncomeTitle(${sIdx}, this.value)">
+            <span style="font-size:12px; font-weight:bold;">入金額:</span>
+            <input type="number" value="${sec.amount}" class="b-input" style="width:105px; font-size:13px; font-weight:bold;" onchange="updateIncomeAmount(${sIdx}, this.value)">
+            <span style="font-size:12px;">円</span>
           </div>
-          <div style="display:flex; align-items:center; gap:6px;">
-            <span style="font-size:12px; font-weight:bold; color:var(--primary);">${groupTotal.toLocaleString()} 円</span>
-            <button class="btn btn-sm" style="border:none; color:#94a3b8;" onclick="deleteGroup(${gIdx})">×</button>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-sm" onclick="openAddGroupModal(${sec.id})">＋ 親項目</button>
+            <button class="btn btn-sm" style="border:none; color:#94a3b8;" onclick="deleteIncomeSection(${sIdx})">削除</button>
           </div>
         </div>
-        ${subsHtml}
-        <div style="text-align:right; margin-top:6px;">
-          <button class="btn btn-sm" onclick="openAddSubModal(${grp.id})">＋ 小項目を追加</button>
+        ${groupsHtml}
+        <div class="income-summary-row">
+          <span>この入金からの割当計: ${secAlloc.toLocaleString()} 円</span>
+          <span style="color: ${secRem < 0 ? 'var(--danger)' : 'var(--primary)'};">残余: ${secRem.toLocaleString()} 円</span>
         </div>
       `;
-      box.appendChild(grpCard);
+      container.appendChild(secEl);
     });
 
-    document.getElementById('flowAllocSum').innerText = totalAlloc.toLocaleString();
-    const inc = parseInt(document.getElementById('flowIncomeInput').value, 10) || 0;
-    const rem = inc - totalAlloc;
-    const remEl = document.getElementById('flowRemainSum');
-    remEl.innerText = rem.toLocaleString();
-    remEl.style.color = rem < 0 ? 'var(--danger)' : 'var(--primary)';
-
-    localStorage.setItem('app_flow_groups_v2', JSON.stringify(flowGroups));
+    localStorage.setItem('app_income_sections_v3', JSON.stringify(incomeSections));
   }
 
-  function toggleSubCheck(gIdx, sIdx) {
-    flowGroups[gIdx].subItems[sIdx].checked = !flowGroups[gIdx].subItems[sIdx].checked;
-    renderFlows();
+  function updateIncomeTitle(sIdx, val) {
+    incomeSections[sIdx].title = val;
+    renderFlowSections();
   }
-  function updateSubCurrAmt(gIdx, sIdx, val) {
-    flowGroups[gIdx].subItems[sIdx].currAmt = parseInt(val, 10) || 0;
-    renderFlows();
+  function updateIncomeAmount(sIdx, val) {
+    incomeSections[sIdx].amount = parseInt(val, 10) || 0;
+    renderFlowSections();
   }
-  function deleteSubItem(gIdx, sIdx) {
-    flowGroups[gIdx].subItems.splice(sIdx, 1);
-    renderFlows();
-  }
-  function deleteGroup(gIdx) {
-    if (confirm("この親項目と内訳をすべて削除しますか？")) {
-      flowGroups.splice(gIdx, 1);
-      renderFlows();
+  function deleteIncomeSection(sIdx) {
+    if (confirm("この入金枠と配下のチェック項目をすべて削除しますか？")) {
+      incomeSections.splice(sIdx, 1);
+      renderFlowSections();
     }
   }
-  function resetFlowChecks() {
-    flowGroups.forEach(g => g.subItems.forEach(s => s.checked = false));
-    renderFlows();
+
+  function toggleGroupCheck(sIdx, gIdx) {
+    incomeSections[sIdx].groups[gIdx].checked = !incomeSections[sIdx].groups[gIdx].checked;
+    renderFlowSections();
+  }
+  function toggleSubCheck(sIdx, gIdx, subIdx) {
+    incomeSections[sIdx].groups[gIdx].subItems[subIdx].checked = !incomeSections[sIdx].groups[gIdx].subItems[subIdx].checked;
+    renderFlowSections();
+  }
+  function updateSubCurrAmt(sIdx, gIdx, subIdx, val) {
+    incomeSections[sIdx].groups[gIdx].subItems[subIdx].currAmt = parseInt(val, 10) || 0;
+    renderFlowSections();
+  }
+  function deleteSubItem(sIdx, gIdx, subIdx) {
+    incomeSections[sIdx].groups[gIdx].subItems.splice(subIdx, 1);
+    renderFlowSections();
+  }
+  function deleteGroup(sIdx, gIdx) {
+    if (confirm("親項目と内訳を削除しますか？")) {
+      incomeSections[sIdx].groups.splice(gIdx, 1);
+      renderFlowSections();
+    }
+  }
+  function resetAllFlowChecks() {
+    incomeSections.forEach(sec => {
+      sec.groups.forEach(g => {
+        g.checked = false;
+        g.subItems.forEach(s => s.checked = false);
+      });
+    });
+    renderFlowSections();
   }
 
-  function openAddGroupModal() { document.getElementById('groupModal').style.display = 'flex'; }
+  function openAddIncomeModal() {
+    document.getElementById('newIncTitle').value = '';
+    document.getElementById('newIncAmount').value = '';
+    document.getElementById('incomeModal').style.display = 'flex';
+  }
+  function saveNewIncomeSection() {
+    const title = document.getElementById('newIncTitle').value.trim();
+    const amount = parseInt(document.getElementById('newIncAmount').value, 10) || 0;
+    if (!title) return;
+    incomeSections.push({
+      id: Date.now(),
+      title,
+      amount,
+      groups: []
+    });
+    closeModal('incomeModal');
+    renderFlowSections();
+  }
+
+  function openAddGroupModal(secId) {
+    targetIncomeIdForGroup = secId;
+    document.getElementById('groupName').value = '';
+    document.getElementById('groupModal').style.display = 'flex';
+  }
   function saveGroupItem() {
     const name = document.getElementById('groupName').value.trim();
     const type = document.getElementById('groupType').value;
     if (!name) return;
-    flowGroups.push({ id: Date.now(), name, type, subItems: [] });
+    const sec = incomeSections.find(s => s.id === targetIncomeIdForGroup);
+    sec.groups.push({ id: Date.now(), name, type, checked: false, subItems: [] });
     closeModal('groupModal');
-    document.getElementById('groupName').value = '';
-    renderFlows();
+    renderFlowSections();
   }
 
-  function openAddSubModal(grpId) {
-    activeGroupIdForSub = grpId;
-    const grp = flowGroups.find(g => g.id === grpId);
+  function openAddSubModal(secId, grpId) {
+    targetIncomeIdForGroup = secId;
+    targetGroupIdForSub = grpId;
+    const sec = incomeSections.find(s => s.id === secId);
+    const grp = sec.groups.find(g => g.id === grpId);
     document.getElementById('subModalTitle').innerText = `${grp.name} の小項目追加`;
     document.getElementById('subName').value = '';
     document.getElementById('subBaseAmt').value = '';
@@ -441,10 +552,11 @@
     const baseAmt = parseInt(document.getElementById('subBaseAmt').value, 10) || 0;
     const currAmt = parseInt(document.getElementById('subCurrAmt').value, 10) || baseAmt;
     if (!name) return;
-    const grp = flowGroups.find(g => g.id === activeGroupIdForSub);
+    const sec = incomeSections.find(s => s.id === targetIncomeIdForGroup);
+    const grp = sec.groups.find(g => g.id === targetGroupIdForSub);
     grp.subItems.push({ id: Date.now(), name, baseAmt, currAmt, checked: false });
     closeModal('subItemModal');
-    renderFlows();
+    renderFlowSections();
   }
 
   // ---------------- 2. 積立通帳（日付指定対応） ----------------
@@ -491,7 +603,7 @@
     });
 
     document.getElementById('totalSavingsSum').innerText = `${totalSum.toLocaleString()} 円`;
-    localStorage.setItem('app_savings_v2', JSON.stringify(savings));
+    localStorage.setItem('app_savings_v3', JSON.stringify(savings));
   }
 
   function toggleLog(id) {
@@ -565,10 +677,7 @@
       const diff = cat.budget - cat.actual;
       const isOver = diff < 0;
 
-      // 100%超でもバーが赤色で伸びるように調整 (最大150%表示基準)
-      const barVisualWidth = Math.min(100, Math.round((cat.actual / (cat.budget * 1.3 || 1)) * 100));
       const barColor = isOver ? 'var(--danger)' : (rate > 85 ? 'var(--warning)' : 'var(--primary)');
-
       const statusTag = isOver
         ? `<span style="color:var(--danger);">(${Math.abs(diff).toLocaleString()}円 オーバー / ${rate}%)</span>`
         : `<span style="color:var(--success);">(残 ${diff.toLocaleString()}円 / ${rate}%)</span>`;
@@ -606,7 +715,7 @@
       diffEl.style.color = 'var(--danger)';
     }
 
-    localStorage.setItem('app_categories_v2', JSON.stringify(currentBudgets));
+    localStorage.setItem('app_categories_v3', JSON.stringify(currentBudgets));
   }
 
   function updateCatActual(idx, val) {
@@ -618,12 +727,11 @@
     renderBudgets();
   }
 
-  // 月別保存と推移テーブル
   function saveCurrentMonthBudget() {
     const ym = document.getElementById('budgetMonthPicker').value;
     if (!ym) return alert('年月を選択してください');
     budgetHistory[ym] = JSON.parse(JSON.stringify(currentBudgets));
-    localStorage.setItem('app_budget_history', JSON.stringify(budgetHistory));
+    localStorage.setItem('app_budget_history_v3', JSON.stringify(budgetHistory));
     renderHistoryTable();
     alert(`${ym} の家計集計データを保存しました`);
   }
@@ -638,7 +746,7 @@
 
   function renderHistoryTable() {
     const table = document.getElementById('budgetHistoryTable');
-    const months = Object.keys(budgetHistory).sort().slice(-3); // 直近3ヶ月
+    const months = Object.keys(budgetHistory).sort().slice(-3);
     if (months.length === 0) {
       table.innerHTML = '<tr><td style="text-align:center; color:#94a3b8;">保存された過去月データがまだありません</td></tr>';
       return;
@@ -659,7 +767,6 @@
       rowsHtml += `</tr>`;
     });
 
-    // 合計行
     rowsHtml += '<tr style="font-weight:bold; background:#f8fafc;"><td>総支出</td>';
     months.forEach(m => {
       const sum = budgetHistory[m].reduce((acc, c) => acc + c.actual, 0);
