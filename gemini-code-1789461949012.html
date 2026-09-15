@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家計・積立・資金移動マネージャー</title>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-light: #eff6ff;
+    --text: #1e293b;
+    --border: #e2e8f0;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { background: var(--bg); color: var(--text); padding: 10px; max-width: 650px; margin: 0 auto; padding-bottom: 70px; }
+
+  /* タブ */
+  .tabs { display: flex; gap: 4px; margin-bottom: 12px; background: #e2e8f0; padding: 4px; border-radius: 10px; }
+  .tab-btn { flex: 1; padding: 9px 4px; text-align: center; font-size: 12px; font-weight: bold; border: none; background: transparent; cursor: pointer; border-radius: 7px; color: #64748b; }
+  .tab-btn.active { background: #fff; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* 共通 */
+  .card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); padding: 14px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+  .card-title { font-size: 11px; color: #64748b; margin-bottom: 6px; font-weight: bold; }
+  .btn { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: #fff; cursor: pointer; font-size: 12px; font-weight: 500; }
+  .btn-primary { background: var(--primary); color: #fff; border: none; }
+  .btn-sm { padding: 4px 8px; font-size: 11px; }
+
+  /* 1. 給与日割り振り */
+  .flow-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+  .flow-item.checked { opacity: 0.45; text-decoration: line-through; }
+  .flow-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+  .tag-bank { background: #dbeafe; color: #1e40af; }
+  .tag-cash { background: #fef3c7; color: #92400e; }
+  .tag-save { background: #d1fae5; color: #065f46; }
+
+  /* 2. 積立カード & 通帳履歴 */
+  .saving-card { border-left: 4px solid var(--primary); margin-bottom: 8px; }
+  .saving-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .saving-name { font-size: 14px; font-weight: bold; }
+  .saving-bal { font-size: 17px; font-weight: bold; color: var(--primary); }
+  .saving-history { font-size: 11px; background: #f8fafc; border-radius: 6px; padding: 6px 8px; margin-top: 8px; display: none; }
+  .history-item { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px dashed #e2e8f0; }
+
+  /* 3. 家計簿・予算バーグラフ */
+  .budget-row { margin-bottom: 12px; }
+  .b-label-row { display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; margin-bottom: 4px; }
+  .b-bar-bg { background: #e2e8f0; height: 12px; border-radius: 6px; overflow: hidden; position: relative; }
+  .b-bar-fill { height: 100%; border-radius: 6px; transition: width 0.3s ease; }
+  .b-inputs { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+  .b-input { width: 90px; padding: 4px 6px; font-size: 12px; border: 1px solid var(--border); border-radius: 4px; text-align: right; }
+
+  /* モーダル */
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 100; padding: 12px; }
+  .modal-content { background: #fff; border-radius: 12px; padding: 16px; width: 100%; max-width: 340px; }
+  .form-group { margin-bottom: 10px; }
+  .form-label { font-size: 11px; color: #64748b; margin-bottom: 3px; display: block; }
+  .form-input { width: 100%; padding: 7px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('budget')">📊 家計集計 & グラフ</button>
+  <button class="tab-btn" onclick="switchTab('savings')">🏦 積立通帳マネージャー</button>
+  <button class="tab-btn" onclick="switchTab('flow')">📋 給与日割り振り</button>
+</div>
+
+<!-- 1. 紙家計簿 集計 & 予算シミュレーション -->
+<div id="tab-budget" class="tab-content active">
+  <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+    <div>
+      <div class="card-title">当月 支出実績合計 / 予算合計</div>
+      <div style="font-size: 18px; font-weight: bold;"><span id="totalActualSpend">0</span> 円 / <span id="totalBudgetSum">0</span> 円</div>
+    </div>
+    <div id="budgetDiffTag" style="font-size: 12px; font-weight: bold;"></div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <span class="card-title">11費目 予算 vs 実績 (紙ノート集計入力)</span>
+      <span style="font-size:10px; color:#64748b;">左:今月実績 / 右:目標予算</span>
+    </div>
+    <div id="budgetCategoryList"></div>
+  </div>
+</div>
+
+<!-- 2. 目的別積立マネージャー (通帳・引出理由) -->
+<div id="tab-savings" class="tab-content">
+  <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+    <div>
+      <div class="card-title">現在の積立実残金 合計</div>
+      <div style="font-size:20px; font-weight:bold; color:var(--primary);" id="totalSavingsSum">0 円</div>
+    </div>
+    <button class="btn btn-sm btn-primary" onclick="openAddSavingModal()">＋ 新規積立枠</button>
+  </div>
+  <div id="savingContainer"></div>
+</div>
+
+<!-- 3. 給与日割り振りチェックリスト -->
+<div id="tab-flow" class="tab-content">
+  <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+    <div>
+      <div class="card-title">給与・入金総額</div>
+      <input type="number" id="flowIncomeInput" class="b-input" style="width:110px; font-size:14px; font-weight:bold;" value="230000" onchange="renderFlows()"> 円
+    </div>
+    <button class="btn btn-sm" onclick="resetChecks()">未済にリセット</button>
+  </div>
+  <div class="card">
+    <div class="card-title">資金移動・袋分け TODO</div>
+    <div id="flowItemsContainer"></div>
+    <div style="margin-top:10px; text-align:right;">
+      <button class="btn btn-sm btn-primary" onclick="openAddFlowModal()">＋ 項目追加</button>
+    </div>
+  </div>
+  <div class="card" style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold;">
+    <span>割当計: <span id="flowAllocSum">0</span> 円</span>
+    <span>残余: <span id="flowRemainSum" style="color:var(--primary);">0</span> 円</span>
+  </div>
+</div>
+
+<!-- 積立入出金モーダル -->
+<div class="modal" id="txModal">
+  <div class="modal-content">
+    <div style="font-weight:bold; margin-bottom:4px;" id="txTitle">入出金記録</div>
+    <div style="font-size:11px; color:#64748b; margin-bottom:10px;" id="txCurrent"></div>
+    <div class="form-group">
+      <label class="form-label">種別</label>
+      <select id="txType" class="form-input">
+        <option value="withdraw">− 出金・取崩し（支払い・補填など）</option>
+        <option value="deposit">＋ 入金（月々の積立など）</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">金額 (円)</label>
+      <input type="number" id="txAmount" class="form-input" placeholder="例: 15000">
+    </div>
+    <div class="form-group">
+      <label class="form-label">引き出した目的・用途メモ</label>
+      <input type="text" id="txMemo" class="form-input" placeholder="例: 住宅ローン夏ボーナス払い、ピンチ補填等">
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:6px;">
+      <button class="btn" onclick="closeModal('txModal')">キャンセル</button>
+      <button class="btn btn-primary" onclick="executeTx()">記録する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 新規積立モーダル -->
+<div class="modal" id="savingAddModal">
+  <div class="modal-content">
+    <div style="font-weight:bold; margin-bottom:10px;">新規積立項目の追加</div>
+    <div class="form-group">
+      <label class="form-label">積立名</label>
+      <input type="text" id="newSavName" class="form-input" placeholder="例: 住宅ローンボーナス払い">
+    </div>
+    <div class="form-group">
+      <label class="form-label">現在の残高 (円)</label>
+      <input type="number" id="newSavBal" class="form-input" placeholder="0" value="0">
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:6px;">
+      <button class="btn" onclick="closeModal('savingAddModal')">キャンセル</button>
+      <button class="btn btn-primary" onclick="createSaving()">追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- 割り振り項目モーダル -->
+<div class="modal" id="flowModal">
+  <div class="modal-content">
+    <div style="font-weight:bold; margin-bottom:10px;">割り振り項目の追加</div>
+    <div class="form-group">
+      <label class="form-label">項目名</label>
+      <input type="text" id="newFlowName" class="form-input" placeholder="例: やりくり費引き出し">
+    </div>
+    <div class="form-group">
+      <label class="form-label">種別</label>
+      <select id="newFlowType" class="form-input">
+        <option value="cash">現金・袋分け</option>
+        <option value="bank">口座振込・移動</option>
+        <option value="save">積立入金</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">金額 (円)</label>
+      <input type="number" id="newFlowAmt" class="form-input" placeholder="例: 40000">
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:6px;">
+      <button class="btn" onclick="closeModal('flowModal')">キャンセル</button>
+      <button class="btn btn-primary" onclick="createFlow()">追加</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 11費目 予算・実績マスター
+  const DEFAULT_CATEGORIES = [
+    { id: 'c1', name: '固定費', budget: 90000, actual: 0 },
+    { id: 'c2', name: '食費・外食費', budget: 35000, actual: 0 },
+    { id: 'c3', name: '日用品費', budget: 10000, actual: 0 },
+    { id: 'c4', name: '娯楽・趣味', budget: 8000, actual: 0 },
+    { id: 'c5', name: '服・美容', budget: 8000, actual: 0 },
+    { id: 'c6', name: '子供', budget: 15000, actual: 0 },
+    { id: 'c7', name: 'ネコ', budget: 6000, actual: 0 },
+    { id: 'c8', name: '車', budget: 12000, actual: 0 },
+    { id: 'c9', name: '医療', budget: 5000, actual: 0 },
+    { id: 'c10', name: '推活', budget: 10000, actual: 0 },
+    { id: 'c11', name: '特別費', budget: 10000, actual: 0 }
+  ];
+
+  let categories = JSON.parse(localStorage.getItem('app_categories') || JSON.stringify(DEFAULT_CATEGORIES));
+  let savings = JSON.parse(localStorage.getItem('app_savings') || JSON.stringify([
+    { id: 1, name: "住宅ローンボーナス払い積立", balance: 60000, logs: [
+      { date: "2026-08-10", type: "deposit", amt: 15000, memo: "8月積立" }
+    ]},
+    { id: 2, name: "車検・自動車税積立", balance: 30000, logs: [] },
+    { id: 3, name: "予備・ピンチ対策費", balance: 25000, logs: [] }
+  ]));
+  let flows = JSON.parse(localStorage.getItem('app_flows') || JSON.stringify([
+    { id: 1, name: "住宅ローン口座へ振替", type: "bank", amount: 65000, checked: false },
+    { id: 2, name: "光熱水費引落口座へ", type: "bank", amount: 20000, checked: false },
+    { id: 3, name: "食費・日用品（現金袋分け）", type: "cash", amount: 45000, checked: false },
+    { id: 4, name: "推活・ネコ・特別費袋分け", type: "cash", amount: 25000, checked: false },
+    { id: 5, name: "住宅ローンボーナス積立", type: "save", amount: 15000, checked: false }
+  ]));
+
+  let selectedSavId = null;
+
+  function init() {
+    renderBudgets();
+    renderSavings();
+    renderFlows();
+  }
+
+  function switchTab(t) {
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+      b.classList.toggle('active', ['budget','savings','flow'][i] === t);
+    });
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById(`tab-${t}`).classList.add('active');
+  }
+
+  // ---------------- 1. 家計簿・予算 ----------------
+  function renderBudgets() {
+    const box = document.getElementById('budgetCategoryList');
+    box.innerHTML = '';
+    let totalBud = 0, totalAct = 0;
+
+    categories.forEach((cat, idx) => {
+      totalBud += cat.budget;
+      totalAct += cat.actual;
+
+      const rate = cat.budget > 0 ? Math.min(100, Math.round((cat.actual / cat.budget) * 100)) : 0;
+      const isOver = cat.actual > cat.budget;
+      const barColor = isOver ? 'var(--danger)' : (rate > 85 ? 'var(--warning)' : 'var(--primary)');
+
+      const div = document.createElement('div');
+      div.className = 'budget-row';
+      div.innerHTML = `
+        <div class="b-label-row">
+          <span>${cat.name}</span>
+          <span>${cat.actual.toLocaleString()} / ${cat.budget.toLocaleString()} 円 (${rate}%)</span>
+        </div>
+        <div class="b-bar-bg">
+          <div class="b-bar-fill" style="width: ${rate}%; background: ${barColor};"></div>
+        </div>
+        <div class="b-inputs">
+          <span style="font-size:11px; color:#64748b;">実績:</span>
+          <input type="number" class="b-input" value="${cat.actual}" onchange="updateCatActual(${idx}, this.value)">
+          <span style="font-size:11px; color:#64748b; margin-left:6px;">予算:</span>
+          <input type="number" class="b-input" value="${cat.budget}" onchange="updateCatBudget(${idx}, this.value)">
+        </div>
+      `;
+      box.appendChild(div);
+    });
+
+    document.getElementById('totalActualSpend').innerText = totalAct.toLocaleString();
+    document.getElementById('totalBudgetSum').innerText = totalBud.toLocaleString();
+
+    const diffEl = document.getElementById('budgetDiffTag');
+    const diff = totalBud - totalAct;
+    if (diff >= 0) {
+      diffEl.innerText = `残り ${diff.toLocaleString()} 円`;
+      diffEl.style.color = 'var(--success)';
+    } else {
+      diffEl.innerText = `${Math.abs(diff).toLocaleString()} 円 オーバー`;
+      diffEl.style.color = 'var(--danger)';
+    }
+
+    localStorage.setItem('app_categories', JSON.stringify(categories));
+  }
+
+  function updateCatActual(idx, val) {
+    categories[idx].actual = parseInt(val, 10) || 0;
+    renderBudgets();
+  }
+
+  function updateCatBudget(idx, val) {
+    categories[idx].budget = parseInt(val, 10) || 0;
+    renderBudgets();
+  }
+
+  // ---------------- 2. 積立通帳マネージャー ----------------
+  function renderSavings() {
+    const box = document.getElementById('savingContainer');
+    box.innerHTML = '';
+    let totalSum = 0;
+
+    savings.forEach(s => {
+      totalSum += s.balance;
+      const card = document.createElement('div');
+      card.className = 'card saving-card';
+      
+      let logsHtml = '';
+      if (s.logs && s.logs.length > 0) {
+        logsHtml = s.logs.slice().reverse().map(l => `
+          <div class="history-item">
+            <span>${l.date} <b>${l.memo || (l.type === 'deposit' ? '入金' : '引出')}</b></span>
+            <span style="color: ${l.type === 'deposit' ? 'var(--success)' : 'var(--danger)'}; font-weight:bold;">
+              ${l.type === 'deposit' ? '+' : '-'}${l.amt.toLocaleString()} 円
+            </span>
+          </div>
+        `).join('');
+      } else {
+        logsHtml = '<div style="color:#94a3b8; text-align:center;">まだ入出金履歴がありません</div>';
+      }
+
+      card.innerHTML = `
+        <div class="saving-header">
+          <span class="saving-name">${s.name}</span>
+          <span class="saving-bal">${s.balance.toLocaleString()} 円</span>
+        </div>
+        <div style="display:flex; gap:6px; margin-top:8px;">
+          <button class="btn btn-sm btn-primary" onclick="openTxModal(${s.id}, 'withdraw')">− 引出・取崩し</button>
+          <button class="btn btn-sm" onclick="openTxModal(${s.id}, 'deposit')">＋ 積立入金</button>
+          <button class="btn btn-sm" onclick="toggleLog(${s.id})">📜 通帳履歴 (${s.logs ? s.logs.length : 0})</button>
+          <button class="btn btn-sm" style="margin-left:auto; border:none; color:#94a3b8;" onclick="delSaving(${s.id})">×</button>
+        </div>
+        <div class="saving-history" id="log-${s.id}">
+          ${logsHtml}
+        </div>
+      `;
+      box.appendChild(card);
+    });
+
+    document.getElementById('totalSavingsSum').innerText = `${totalSum.toLocaleString()} 円`;
+    localStorage.setItem('app_savings', JSON.stringify(savings));
+  }
+
+  function toggleLog(id) {
+    const el = document.getElementById(`log-${id}`);
+    el.style.display = el.style.display === 'block' ? 'none' : 'block';
+  }
+
+  function openTxModal(id, defaultType) {
+    selectedSavId = id;
+    const s = savings.find(x => x.id === id);
+    document.getElementById('txTitle').innerText = `${s.name} の入出金`;
+    document.getElementById('txCurrent').innerText = `現在の実残金: ${s.balance.toLocaleString()} 円`;
+    document.getElementById('txType').value = defaultType;
+    document.getElementById('txAmount').value = '';
+    document.getElementById('txMemo').value = '';
+    document.getElementById('txModal').style.display = 'flex';
+  }
+
+  function executeTx() {
+    const s = savings.find(x => x.id === selectedSavId);
+    const type = document.getElementById('txType').value;
+    const amt = parseInt(document.getElementById('txAmount').value, 10) || 0;
+    const memo = document.getElementById('txMemo').value.trim();
+
+    if (amt <= 0) return alert('金額を正しく入力してください');
+
+    if (type === 'withdraw') {
+      if (amt > s.balance && !confirm("残金を超えています。マイナス残高として記録しますか？")) return;
+      s.balance -= amt;
+    } else {
+      s.balance += amt;
+    }
+
+    if (!s.logs) s.logs = [];
+    s.logs.push({
+      date: new Date().toISOString().slice(0,10),
+      type, amt, memo: memo || (type === 'deposit' ? '積立入金' : '引き出し')
+    });
+
+    closeModal('txModal');
+    renderSavings();
+  }
+
+  function openAddSavingModal() { document.getElementById('savingAddModal').style.display = 'flex'; }
+  function createSaving() {
+    const name = document.getElementById('newSavName').value.trim();
+    const balance = parseInt(document.getElementById('newSavBal').value, 10) || 0;
+    if (!name) return;
+    savings.push({ id: Date.now(), name, balance, logs: [] });
+    closeModal('savingAddModal');
+    renderSavings();
+  }
+
+  function delSaving(id) {
+    if (confirm("この積立枠を削除しますか？")) {
+      savings = savings.filter(s => s.id !== id);
+      renderSavings();
+    }
+  }
+
+  // ---------------- 3. 給与日割り振り ----------------
+  function renderFlows() {
+    const box = document.getElementById('flowItemsContainer');
+    box.innerHTML = '';
+    let total = 0;
+
+    flows.forEach((item, idx) => {
+      total += item.amount;
+      const tagClass = item.type === 'bank' ? 'tag-bank' : (item.type === 'cash' ? 'tag-cash' : 'tag-save');
+      const tagLabel = item.type === 'bank' ? '口座移動' : (item.type === 'cash' ? '現金袋分け' : '積立');
+
+      const div = document.createElement('div');
+      div.className = `flow-item ${item.checked ? 'checked' : ''}`;
+      div.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleFlow(${idx})" style="width:18px;height:18px;">
+          <div>
+            <span class="flow-tag ${tagClass}">${tagLabel}</span>
+            <span style="font-size:13px; font-weight:500; margin-left:4px;">${item.name}</span>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <input type="number" class="b-input" value="${item.amount}" onchange="updateFlowAmt(${idx}, this.value)">
+          <button class="btn btn-sm" style="border:none; color:#94a3b8;" onclick="delFlow(${idx})">×</button>
+        </div>
+      `;
+      box.appendChild(div);
+    });
+
+    document.getElementById('flowAllocSum').innerText = total.toLocaleString();
+    const inc = parseInt(document.getElementById('flowIncomeInput').value, 10) || 0;
+    const rem = inc - total;
+    const remEl = document.getElementById('flowRemainSum');
+    remEl.innerText = rem.toLocaleString();
+    remEl.style.color = rem < 0 ? 'var(--danger)' : 'var(--primary)';
+
+    localStorage.setItem('app_flows', JSON.stringify(flows));
+  }
+
+  function toggleFlow(idx) {
+    flows[idx].checked = !flows[idx].checked;
+    renderFlows();
+  }
+  function updateFlowAmt(idx, val) {
+    flows[idx].amount = parseInt(val, 10) || 0;
+    renderFlows();
+  }
+  function delFlow(idx) {
+    if (confirm("項目を削除しますか？")) {
+      flows.splice(idx, 1);
+      renderFlows();
+    }
+  }
+  function resetChecks() {
+    flows.forEach(f => f.checked = false);
+    renderFlows();
+  }
+  function openAddFlowModal() { document.getElementById('flowModal').style.display = 'flex'; }
+  function createFlow() {
+    const name = document.getElementById('newFlowName').value.trim();
+    const type = document.getElementById('newFlowType').value;
+    const amount = parseInt(document.getElementById('newFlowAmt').value, 10) || 0;
+    if (!name) return;
+    flows.push({ id: Date.now(), name, type, amount, checked: false });
+    closeModal('flowModal');
+    renderFlows();
+  }
+
+  function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+  init();
+</script>
+</body>
+</html>
