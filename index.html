@@ -63,11 +63,11 @@
   .history-item { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px dashed #e2e8f0; }
 
   /* 3. 家計集計 */
-  .budget-row { margin-bottom: 10px; }
-  .b-label-row { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; margin-bottom: 3px; }
+  .budget-row { margin-bottom: 10px; border-bottom: 1px solid #f8fafc; padding-bottom: 6px; }
+  .b-label-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: bold; margin-bottom: 3px; }
   .b-bar-bg { background: #e2e8f0; height: 10px; border-radius: 5px; overflow: hidden; }
   .b-bar-fill { height: 100%; border-radius: 5px; transition: width 0.3s ease; }
-  .b-inputs { display: flex; gap: 6px; align-items: center; margin-top: 3px; }
+  .b-inputs { display: flex; gap: 4px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
   .b-input { width: 75px; max-width: 25vw; padding: 3px 4px; font-size: 11px; border: 1px solid var(--border); border-radius: 4px; text-align: right; }
 
   /* 推移テーブル */
@@ -136,7 +136,10 @@
   </div>
 
   <div class="card">
-    <div class="card-title">11費目 予算 vs 実績</div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+      <span class="card-title" style="margin:0;">費目別 予算 vs 実績</span>
+      <button class="btn btn-sm btn-primary" onclick="openAddCategoryModal()">＋ 費目を追加</button>
+    </div>
     <div id="budgetCategoryList"></div>
   </div>
 
@@ -148,6 +151,26 @@
   </div>
 </div>
 
+<!-- モーダル: 費目追加/編集 -->
+<div class="modal" id="catModal">
+  <div class="modal-content">
+    <div style="font-weight:bold; margin-bottom:8px;" id="catModalTitle">費目の設定</div>
+    <input type="hidden" id="editCatIndex">
+    <div class="form-group">
+      <label class="form-label">費目名</label>
+      <input type="text" id="catNameInput" class="form-input" placeholder="例: ガソリン代、特別費">
+    </div>
+    <div class="form-group">
+      <label class="form-label">基準予算額 (円)</label>
+      <input type="number" id="catBudgetInput" class="form-input" placeholder="例: 10000">
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:6px;">
+      <button class="btn" onclick="closeModal('catModal')">閉じる</button>
+      <button class="btn btn-primary" onclick="saveCategory()">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- モーダル: 入金枠の追加/編集 -->
 <div class="modal" id="incomeModal">
   <div class="modal-content">
@@ -155,7 +178,7 @@
     <input type="hidden" id="editIncomeId">
     <div class="form-group">
       <label class="form-label">入金名称・日付</label>
-      <input type="text" id="newIncTitle" class="form-input" placeholder="例: 15日 本業給与">
+      <input type="text" id="newIncTitle" class="form-input" placeholder="例: 15日 給料">
     </div>
     <div class="form-group">
       <label class="form-label">入金額 (円)</label>
@@ -239,7 +262,7 @@
     </div>
     <div class="form-group">
       <label class="form-label">目的・用途メモ</label>
-      <input type="text" id="txMemo" class="form-input" placeholder="例: 車検費用引き出し、月次積立">
+      <input type="text" id="txMemo" class="form-input" placeholder="例: 夏ボーナス払い、生活費補填">
     </div>
     <div style="display:flex; justify-content:flex-end; gap:6px;">
       <button class="btn" onclick="closeModal('txModal')">閉じる</button>
@@ -269,7 +292,13 @@
 </div>
 
 <script>
-  // 11費目 汎用デフォルト設定
+  // 永続化キー（今後は変更せず固定）
+  const KEY_CATEGORIES = 'app_user_categories';
+  const KEY_HISTORY = 'app_user_budget_history';
+  const KEY_INCOMES = 'app_user_income_sections';
+  const KEY_SAVINGS = 'app_user_savings';
+
+  // 初期デフォルト費目
   const DEFAULT_CATEGORIES = [
     { id: 'c1', name: '固定費', budget: 80000, actual: 0 },
     { id: 'c2', name: '食費・外食費', budget: 35000, actual: 0 },
@@ -284,47 +313,52 @@
     { id: 'c11', name: '特別費', budget: 10000, actual: 0 }
   ];
 
-  let currentBudgets = JSON.parse(localStorage.getItem('app_categories_share') || JSON.stringify(DEFAULT_CATEGORIES));
-  let budgetHistory = JSON.parse(localStorage.getItem('app_budget_history_share') || '{}');
+  // 以前の保存データがあれば自動救済・ロード
+  let currentBudgets = JSON.parse(
+    localStorage.getItem(KEY_CATEGORIES) ||
+    localStorage.getItem('app_categories_share') ||
+    localStorage.getItem('app_categories_v5') ||
+    localStorage.getItem('app_categories_v4') ||
+    JSON.stringify(DEFAULT_CATEGORIES)
+  );
 
-  // 個人情報を完全に排した汎用初期データ
-  let incomeSections = JSON.parse(localStorage.getItem('app_income_sections_share') || JSON.stringify([
-    {
-      id: 1, title: "15日 給与入金 (例)", amount: 150000,
-      groups: [
-        {
-          id: 101, name: "引落用メイン口座", type: "bank", checked: false, collapsed: false,
-          subItems: [
-            { id: 1001, name: "家賃/住宅ローン", baseAmt: 60000, currAmt: 60000, checked: false },
-            { id: 1002, name: "光熱水費引落", baseAmt: 20000, currAmt: 20000, checked: false }
-          ]
-        },
-        {
-          id: 102, name: "目的別貯金口座", type: "chokin", checked: false, collapsed: false,
-          subItems: [
-            { id: 1003, name: "将来用積立", baseAmt: 10000, currAmt: 10000, checked: false }
-          ]
-        }
-      ]
-    },
-    {
-      id: 2, title: "25日 副収入・手当 (例)", amount: 50000,
-      groups: [
-        {
-          id: 201, name: "やりくり現金袋", type: "cash", checked: false, collapsed: false,
-          subItems: [
-            { id: 2001, name: "食費・日用品 現金", baseAmt: 35000, currAmt: 35000, checked: false },
-            { id: 2002, name: "予備費 現金", baseAmt: 15000, currAmt: 15000, checked: false }
-          ]
-        }
-      ]
-    }
-  ]));
+  let budgetHistory = JSON.parse(
+    localStorage.getItem(KEY_HISTORY) ||
+    localStorage.getItem('app_budget_history_share') ||
+    localStorage.getItem('app_budget_history_v5') ||
+    localStorage.getItem('app_budget_history_v4') ||
+    '{}'
+  );
 
-  let savings = JSON.parse(localStorage.getItem('app_savings_share') || JSON.stringify([
-    { id: 1, name: "車検・税金積立 (例)", balance: 30000, logs: [] },
-    { id: 2, name: "緊急予備費 (例)", balance: 50000, logs: [] }
-  ]));
+  let incomeSections = JSON.parse(
+    localStorage.getItem(KEY_INCOMES) ||
+    localStorage.getItem('app_income_sections_v5') ||
+    localStorage.getItem('app_income_sections_v4') ||
+    localStorage.getItem('app_income_sections_share') ||
+    JSON.stringify([
+      {
+        id: 1, title: "給与入金 (例)", amount: 150000,
+        groups: [
+          {
+            id: 101, name: "引落口座", type: "bank", checked: false, collapsed: false,
+            subItems: [
+              { id: 1001, name: "家賃/住宅ローン", baseAmt: 60000, currAmt: 60000, checked: false }
+            ]
+          }
+        ]
+      }
+    ])
+  );
+
+  let savings = JSON.parse(
+    localStorage.getItem(KEY_SAVINGS) ||
+    localStorage.getItem('app_savings_v5') ||
+    localStorage.getItem('app_savings_v4') ||
+    localStorage.getItem('app_savings_share') ||
+    JSON.stringify([
+      { id: 1, name: "特別支出積立 (例)", balance: 30000, logs: [] }
+    ])
+  );
 
   let targetIncId = null;
   let targetGrpId = null;
@@ -441,7 +475,7 @@
       container.appendChild(secEl);
     });
 
-    localStorage.setItem('app_income_sections_share', JSON.stringify(incomeSections));
+    localStorage.setItem(KEY_INCOMES, JSON.stringify(incomeSections));
   }
 
   function toggleGroupCollapse(sIdx, gIdx) {
@@ -643,7 +677,7 @@
     });
 
     document.getElementById('totalSavingsSum').innerText = `${totalSum.toLocaleString()} 円`;
-    localStorage.setItem('app_savings_share', JSON.stringify(savings));
+    localStorage.setItem(KEY_SAVINGS, JSON.stringify(savings));
   }
 
   function toggleLog(id) {
@@ -723,7 +757,7 @@
     }
   }
 
-  // ---------------- 3. 家計集計 & 予算推移 ----------------
+  // ---------------- 3. 家計集計（費目の自由追加・修正・削除） ----------------
   function renderBudgets() {
     const box = document.getElementById('budgetCategoryList');
     box.innerHTML = '';
@@ -746,16 +780,20 @@
       div.className = 'budget-row';
       div.innerHTML = `
         <div class="b-label-row">
-          <span>${cat.name}</span>
+          <div style="display:flex; align-items:center; gap:4px;">
+            <span>${cat.name}</span>
+            <button class="btn btn-sm btn-edit" style="padding:1px 4px; font-size:9px;" onclick="openEditCategoryModal(${idx})">✏️</button>
+            <button class="btn btn-sm" style="padding:1px 4px; font-size:9px; border:none; color:#94a3b8;" onclick="deleteCategory(${idx})">×</button>
+          </div>
           <span>${cat.actual.toLocaleString()} / ${cat.budget.toLocaleString()} 円 ${statusTag}</span>
         </div>
         <div class="b-bar-bg">
           <div class="b-bar-fill" style="width: ${rate > 100 ? 100 : rate}%; background: ${barColor};"></div>
         </div>
         <div class="b-inputs">
-          <span style="font-size:10px; color:#64748b;">実績:</span>
+          <span style="font-size:10px; color:#64748b;">今月実績:</span>
           <input type="number" class="b-input" value="${cat.actual}" onchange="updateCatActual(${idx}, this.value)">
-          <span style="font-size:10px; color:#64748b; margin-left:4px;">基準:</span>
+          <span style="font-size:10px; color:#64748b; margin-left:4px;">基準予算:</span>
           <input type="number" class="b-input" value="${cat.budget}" onchange="updateCatBudget(${idx}, this.value)">
         </div>
       `;
@@ -775,7 +813,7 @@
       diffEl.style.color = 'var(--danger)';
     }
 
-    localStorage.setItem('app_categories_share', JSON.stringify(currentBudgets));
+    localStorage.setItem(KEY_CATEGORIES, JSON.stringify(currentBudgets));
   }
 
   function updateCatActual(idx, val) {
@@ -787,11 +825,51 @@
     renderBudgets();
   }
 
+  // 費目の追加・編集・削除
+  function openAddCategoryModal() {
+    document.getElementById('catModalTitle').innerText = '費目の追加';
+    document.getElementById('editCatIndex').value = '';
+    document.getElementById('catNameInput').value = '';
+    document.getElementById('catBudgetInput').value = '';
+    document.getElementById('catModal').style.display = 'flex';
+  }
+  function openEditCategoryModal(idx) {
+    const cat = currentBudgets[idx];
+    document.getElementById('catModalTitle').innerText = '費目名の変更';
+    document.getElementById('editCatIndex').value = idx;
+    document.getElementById('catNameInput').value = cat.name;
+    document.getElementById('catBudgetInput').value = cat.budget;
+    document.getElementById('catModal').style.display = 'flex';
+  }
+  function saveCategory() {
+    const editIdx = document.getElementById('editCatIndex').value;
+    const name = document.getElementById('catNameInput').value.trim();
+    const budget = parseInt(document.getElementById('catBudgetInput').value, 10) || 0;
+    if (!name) return;
+
+    if (editIdx !== '') {
+      currentBudgets[parseInt(editIdx, 10)].name = name;
+      currentBudgets[parseInt(editIdx, 10)].budget = budget;
+    } else {
+      currentBudgets.push({ id: `c_${Date.now()}`, name, budget, actual: 0 });
+    }
+    closeModal('catModal');
+    renderBudgets();
+    renderHistoryTable();
+  }
+  function deleteCategory(idx) {
+    if (confirm(`費目「${currentBudgets[idx].name}」を削除しますか？`)) {
+      currentBudgets.splice(idx, 1);
+      renderBudgets();
+      renderHistoryTable();
+    }
+  }
+
   function saveCurrentMonthBudget() {
     const ym = document.getElementById('budgetMonthPicker').value;
     if (!ym) return alert('年月を選択してください');
     budgetHistory[ym] = JSON.parse(JSON.stringify(currentBudgets));
-    localStorage.setItem('app_budget_history_share', JSON.stringify(budgetHistory));
+    localStorage.setItem(KEY_HISTORY, JSON.stringify(budgetHistory));
     renderHistoryTable();
     alert(`${ym} の集計を保存しました`);
   }
@@ -817,10 +895,10 @@
     headerHtml += '</tr>';
 
     let rowsHtml = '';
-    DEFAULT_CATEGORIES.forEach(cat => {
+    currentBudgets.forEach(cat => {
       rowsHtml += `<tr><td>${cat.name}</td>`;
       months.forEach(m => {
-        const histCat = budgetHistory[m].find(c => c.name === cat.name);
+        const histCat = budgetHistory[m] ? budgetHistory[m].find(c => c.name === cat.name) : null;
         const act = histCat ? histCat.actual : 0;
         rowsHtml += `<td>${act.toLocaleString()}</td>`;
       });
