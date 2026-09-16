@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>家計・積立・給与割り振りマネージャー Pro</title>
 <style>
   :root {
@@ -15,129 +15,129 @@
     --success: #10b981;
     --danger: #ef4444;
     --warning: #f59e0b;
-    --purple: #8b5cf6;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  body { background: var(--bg); color: var(--text); padding: 10px; max-width: 700px; margin: 0 auto; padding-bottom: 70px; }
+  html, body { width: 100%; max-width: 100%; overflow-x: hidden; background: var(--bg); color: var(--text); }
+  body { padding: 8px; padding-bottom: 70px; }
 
   /* タブ */
-  .tabs { display: flex; gap: 4px; margin-bottom: 12px; background: #e2e8f0; padding: 4px; border-radius: 10px; }
-  .tab-btn { flex: 1; padding: 9px 4px; text-align: center; font-size: 12px; font-weight: bold; border: none; background: transparent; cursor: pointer; border-radius: 7px; color: #64748b; }
-  .tab-btn.active { background: #fff; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-  .tab-content { display: none; }
+  .tabs { display: flex; width: 100%; gap: 4px; margin-bottom: 10px; background: #e2e8f0; padding: 3px; border-radius: 8px; }
+  .tab-btn { flex: 1; padding: 8px 2px; text-align: center; font-size: 11.5px; font-weight: bold; border: none; background: transparent; cursor: pointer; border-radius: 6px; color: #64748b; }
+  .tab-btn.active { background: #fff; color: var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+  .tab-content { display: none; width: 100%; }
   .tab-content.active { display: block; }
 
-  /* 共通カード・ボタン */
-  .card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); padding: 14px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
-  .card-title { font-size: 11px; color: #64748b; margin-bottom: 6px; font-weight: bold; }
-  .btn { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: #fff; cursor: pointer; font-size: 12px; font-weight: 500; }
+  /* 共通カード */
+  .card { background: var(--card); border-radius: 10px; border: 1px solid var(--border); padding: 10px; margin-bottom: 8px; width: 100%; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+  .card-title { font-size: 11px; color: #64748b; margin-bottom: 4px; font-weight: bold; }
+  .btn { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: #fff; cursor: pointer; font-size: 11px; font-weight: 500; white-space: nowrap; }
   .btn-primary { background: var(--primary); color: #fff; border: none; }
-  .btn-sm { padding: 3px 8px; font-size: 11px; }
+  .btn-sm { padding: 2px 6px; font-size: 10px; }
+  .btn-edit { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
 
   /* タグバッジ */
-  .flow-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+  .flow-tag { font-size: 9px; padding: 1px 4px; border-radius: 4px; font-weight: bold; white-space: nowrap; }
   .tag-bank { background: #dbeafe; color: #1e40af; }
   .tag-cash { background: #fef3c7; color: #92400e; }
   .tag-save { background: #d1fae5; color: #065f46; }
   .tag-chokin { background: #ede9fe; color: #5b21b6; }
 
-  /* 1. 給与日割り振り（入金タイミングブロック） */
-  .income-section { background: #fff; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 14px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-  .income-header { background: #f1f5f9; padding: 10px 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
-  .income-meta-inputs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-  .income-summary-row { padding: 6px 12px; background: #faf5ff; display: flex; justify-content: space-between; font-size: 11.5px; font-weight: bold; border-top: 1px dashed var(--border); }
+  /* 1. 給与割り振り */
+  .income-section { background: #fff; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; width: 100%; overflow: hidden; }
+  .income-header { background: #f1f5f9; padding: 8px 10px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 4px; flex-wrap: wrap; }
+  .income-summary-row { padding: 6px 10px; background: #faf5ff; display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; border-top: 1px dashed var(--border); }
 
-  .flow-group-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin: 8px 10px; }
-  .flow-group-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; margin-bottom: 6px; }
+  .flow-group-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; margin: 6px; }
+  .flow-group-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; margin-bottom: 4px; }
   .flow-group-header.checked { opacity: 0.5; text-decoration: line-through; }
-  .flow-sub-item { display: flex; align-items: center; justify-content: space-between; padding: 5px 0 5px 22px; border-bottom: 1px dashed #f8fafc; font-size: 12px; }
+  .flow-sub-container { transition: max-height 0.2s ease; }
+  .flow-sub-item { display: flex; align-items: center; justify-content: space-between; padding: 5px 0 5px 12px; border-bottom: 1px dashed #f8fafc; font-size: 11.5px; gap: 4px; }
   .flow-sub-item.checked { opacity: 0.45; text-decoration: line-through; }
-  .amt-meta { font-size: 9.5px; color: #64748b; display: block; text-align: right; }
+  .amt-meta { font-size: 9px; color: #64748b; display: block; text-align: right; }
 
   /* 2. 積立カード */
-  .saving-card { border-left: 4px solid var(--primary); margin-bottom: 8px; }
+  .saving-card { border-left: 4px solid var(--primary); margin-bottom: 6px; }
   .saving-header { display: flex; justify-content: space-between; align-items: center; }
-  .saving-name { font-size: 14px; font-weight: bold; }
-  .saving-bal { font-size: 17px; font-weight: bold; color: var(--primary); }
-  .saving-history { font-size: 11px; background: #f8fafc; border-radius: 6px; padding: 6px 8px; margin-top: 8px; display: none; }
-  .history-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #e2e8f0; }
+  .saving-name { font-size: 13px; font-weight: bold; }
+  .saving-bal { font-size: 15px; font-weight: bold; color: var(--primary); }
+  .saving-history { font-size: 10.5px; background: #f8fafc; border-radius: 6px; padding: 6px 8px; margin-top: 6px; display: none; }
+  .history-item { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px dashed #e2e8f0; }
 
-  /* 3. 家計集計 & グラフ */
-  .budget-row { margin-bottom: 12px; }
-  .b-label-row { display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; margin-bottom: 4px; }
-  .b-bar-bg { background: #e2e8f0; height: 12px; border-radius: 6px; overflow: hidden; position: relative; }
-  .b-bar-fill { height: 100%; border-radius: 6px; transition: width 0.3s ease; }
-  .b-inputs { display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
-  .b-input { width: 90px; padding: 4px 6px; font-size: 12px; border: 1px solid var(--border); border-radius: 4px; text-align: right; }
+  /* 3. 家計集計 */
+  .budget-row { margin-bottom: 10px; }
+  .b-label-row { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; margin-bottom: 3px; }
+  .b-bar-bg { background: #e2e8f0; height: 10px; border-radius: 5px; overflow: hidden; }
+  .b-bar-fill { height: 100%; border-radius: 5px; transition: width 0.3s ease; }
+  .b-inputs { display: flex; gap: 6px; align-items: center; margin-top: 3px; }
+  .b-input { width: 75px; max-width: 25vw; padding: 3px 4px; font-size: 11px; border: 1px solid var(--border); border-radius: 4px; text-align: right; }
 
   /* 推移テーブル */
-  .history-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 8px; }
-  .history-table th, .history-table td { border: 1px solid var(--border); padding: 5px 4px; text-align: right; }
+  .history-table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+  .history-table th, .history-table td { border: 1px solid var(--border); padding: 4px 3px; text-align: right; }
   .history-table th:first-child, .history-table td:first-child { text-align: left; }
   .history-table th { background: #f1f5f9; font-weight: 600; }
 
   /* モーダル */
-  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 100; padding: 12px; }
-  .modal-content { background: #fff; border-radius: 12px; padding: 16px; width: 100%; max-width: 360px; max-height: 90vh; overflow-y: auto; }
-  .form-group { margin-bottom: 10px; }
-  .form-label { font-size: 11px; color: #64748b; margin-bottom: 3px; display: block; }
-  .form-input { width: 100%; padding: 7px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 100; padding: 10px; }
+  .modal-content { background: #fff; border-radius: 12px; padding: 14px; width: 100%; max-width: 330px; max-height: 90vh; overflow-y: auto; }
+  .form-group { margin-bottom: 8px; }
+  .form-label { font-size: 10.5px; color: #64748b; margin-bottom: 2px; display: block; }
+  .form-input { width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
 </style>
 </head>
 <body>
 
 <div class="tabs">
-  <button class="tab-btn active" onclick="switchTab('flow')">📋 給与・手当割り振り</button>
+  <button class="tab-btn active" onclick="switchTab('flow')">📋 給与割り振り</button>
   <button class="tab-btn" onclick="switchTab('savings')">🏦 積立通帳</button>
-  <button class="tab-btn" onclick="switchTab('budget')">📊 家計集計 & 推移</button>
+  <button class="tab-btn" onclick="switchTab('budget')">📊 家計集計&推移</button>
 </div>
 
-<!-- 1. 給与割り振り（入金タイミングごとにブロック化） -->
+<!-- 1. 給与割り振り -->
 <div id="tab-flow" class="tab-content active">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-    <span class="card-title" style="margin:0;">入金タイミングごとの資金移動・袋分け</span>
-    <div style="display:flex; gap:6px;">
-      <button class="btn btn-sm" onclick="resetAllFlowChecks()">全チェック解除</button>
-      <button class="btn btn-sm btn-primary" onclick="openAddIncomeModal()">＋ 入金枠を追加</button>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+    <span class="card-title" style="margin:0;">入金ごとの資金移動・袋分け</span>
+    <div style="display:flex; gap:4px;">
+      <button class="btn btn-sm" onclick="resetAllFlowChecks()">全未済化</button>
+      <button class="btn btn-sm btn-primary" onclick="openAddIncomeModal()">＋ 入金枠</button>
     </div>
   </div>
-
   <div id="incomeSectionsContainer"></div>
 </div>
 
-<!-- 2. 積立通帳マネージャー（日付指定つき入出金） -->
+<!-- 2. 積立通帳マネージャー -->
 <div id="tab-savings" class="tab-content">
   <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
     <div>
       <div class="card-title">現在の積立実残金 合計</div>
-      <div style="font-size:20px; font-weight:bold; color:var(--primary);" id="totalSavingsSum">0 円</div>
+      <div style="font-size:18px; font-weight:bold; color:var(--primary);" id="totalSavingsSum">0 円</div>
     </div>
     <button class="btn btn-sm btn-primary" onclick="openAddSavingModal()">＋ 新規積立枠</button>
   </div>
   <div id="savingContainer"></div>
 </div>
 
-<!-- 3. 家計集計 & 予算推移（超過額表示・グラフ・過去月保存） -->
+<!-- 3. 家計集計 & 予算推移 -->
 <div id="tab-budget" class="tab-content">
   <div class="card">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-      <div style="display:flex; align-items:center; gap:6px;">
-        <span class="card-title" style="margin:0;">対象月:</span>
-        <input type="month" id="budgetMonthPicker" class="b-input" style="width:130px;" onchange="loadSelectedMonthBudget()">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div style="display:flex; align-items:center; gap:4px;">
+        <span class="card-title" style="margin:0;">月:</span>
+        <input type="month" id="budgetMonthPicker" class="b-input" style="width:110px;" onchange="loadSelectedMonthBudget()">
       </div>
       <button class="btn btn-sm btn-primary" onclick="saveCurrentMonthBudget()">💾 今月を保存</button>
     </div>
-    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:8px;">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:6px;">
       <div>
-        <div style="font-size:11px; color:#64748b;">支出実績合計 / 予算合計</div>
-        <div style="font-size:17px; font-weight:bold;"><span id="totalActualSpend">0</span> 円 / <span id="totalBudgetSum">0</span> 円</div>
+        <div style="font-size:10px; color:#64748b;">支出実績合計 / 予算合計</div>
+        <div style="font-size:15px; font-weight:bold;"><span id="totalActualSpend">0</span> 円 / <span id="totalBudgetSum">0</span> 円</div>
       </div>
-      <div id="budgetDiffTag" style="font-size:13px; font-weight:bold;"></div>
+      <div id="budgetDiffTag" style="font-size:11.5px; font-weight:bold;"></div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">11費目 予算 vs 実績 (左:実績入力 / 右:基準予算)</div>
+    <div class="card-title">11費目 予算 vs 実績</div>
     <div id="budgetCategoryList"></div>
   </div>
 
@@ -149,32 +149,34 @@
   </div>
 </div>
 
-<!-- モーダル: 入金枠（タイミング）の追加 -->
+<!-- モーダル: 入金枠の追加/編集 -->
 <div class="modal" id="incomeModal">
   <div class="modal-content">
-    <div style="font-weight:bold; margin-bottom:10px;">入金枠の追加（給与・手当）</div>
+    <div style="font-weight:bold; margin-bottom:8px;" id="incModalTitle">入金枠の設定</div>
+    <input type="hidden" id="editIncomeId">
     <div class="form-group">
-      <label class="form-label">入金の名称・日付</label>
-      <input type="text" id="newIncTitle" class="form-input" placeholder="例: 9/15 メークス給与入金">
+      <label class="form-label">入金名称・日付</label>
+      <input type="text" id="newIncTitle" class="form-input" placeholder="例: 9/15 メークス給料">
     </div>
     <div class="form-group">
       <label class="form-label">入金額 (円)</label>
-      <input type="number" id="newIncAmount" class="form-input" placeholder="例: 130000">
+      <input type="number" id="newIncAmount" class="form-input" placeholder="例: 131480">
     </div>
     <div style="display:flex; justify-content:flex-end; gap:6px;">
       <button class="btn" onclick="closeModal('incomeModal')">閉じる</button>
-      <button class="btn btn-primary" onclick="saveNewIncomeSection()">追加</button>
+      <button class="btn btn-primary" onclick="saveIncomeSection()">保存</button>
     </div>
   </div>
 </div>
 
-<!-- モーダル: 親項目（大項目）追加 -->
+<!-- モーダル: 親項目追加/編集 -->
 <div class="modal" id="groupModal">
   <div class="modal-content">
-    <div style="font-weight:bold; margin-bottom:10px;">親項目（口座・袋名）の追加</div>
+    <div style="font-weight:bold; margin-bottom:8px;" id="grpModalTitle">親項目（口座・袋名）の設定</div>
+    <input type="hidden" id="editGroupId">
     <div class="form-group">
       <label class="form-label">親項目名（大項目）</label>
-      <input type="text" id="groupName" class="form-input" placeholder="例: ドコモ銀行、鹿児島銀行、生活費袋">
+      <input type="text" id="groupName" class="form-input" placeholder="例: ドコモ銀行、鹿児島銀行">
     </div>
     <div class="form-group">
       <label class="form-label">種別</label>
@@ -187,30 +189,31 @@
     </div>
     <div style="display:flex; justify-content:flex-end; gap:6px;">
       <button class="btn" onclick="closeModal('groupModal')">閉じる</button>
-      <button class="btn btn-primary" onclick="saveGroupItem()">追加</button>
+      <button class="btn btn-primary" onclick="saveGroupItem()">保存</button>
     </div>
   </div>
 </div>
 
-<!-- モーダル: 小項目追加 -->
+<!-- モーダル: 小項目追加/編集 -->
 <div class="modal" id="subItemModal">
   <div class="modal-content">
-    <div style="font-weight:bold; margin-bottom:6px;" id="subModalTitle">小項目の追加</div>
+    <div style="font-weight:bold; margin-bottom:6px;" id="subModalTitle">小項目の設定</div>
+    <input type="hidden" id="editSubId">
     <div class="form-group">
       <label class="form-label">小項目名（目的・内訳）</label>
-      <input type="text" id="subName" class="form-input" placeholder="例: 子供貯金、修学旅行積立、生活費">
+      <input type="text" id="subName" class="form-input" placeholder="例: 子供貯金、修学旅行積立">
     </div>
     <div class="form-group">
-      <label class="form-label">通常・基本の金額 (円)</label>
+      <label class="form-label">基本の金額 (円)</label>
       <input type="number" id="subBaseAmt" class="form-input" placeholder="例: 3000">
     </div>
     <div class="form-group">
-      <label class="form-label">今月の金額 (円) ※通常と同額なら同じ額</label>
+      <label class="form-label">今月の金額 (円)</label>
       <input type="number" id="subCurrAmt" class="form-input" placeholder="例: 1000">
     </div>
     <div style="display:flex; justify-content:flex-end; gap:6px;">
       <button class="btn" onclick="closeModal('subItemModal')">閉じる</button>
-      <button class="btn btn-primary" onclick="saveSubItem()">追加</button>
+      <button class="btn btn-primary" onclick="saveSubItem()">保存</button>
     </div>
   </div>
 </div>
@@ -219,54 +222,54 @@
 <div class="modal" id="txModal">
   <div class="modal-content">
     <div style="font-weight:bold; margin-bottom:4px;" id="txTitle">入出金記録</div>
-    <div style="font-size:11px; color:#64748b; margin-bottom:10px;" id="txCurrent"></div>
+    <div style="font-size:10.5px; color:#64748b; margin-bottom:8px;" id="txCurrent"></div>
     <div class="form-group">
-      <label class="form-label">処理日 (過去日付も選択可能)</label>
+      <label class="form-label">処理日</label>
       <input type="date" id="txDate" class="form-input">
     </div>
     <div class="form-group">
       <label class="form-label">種別</label>
       <select id="txType" class="form-input">
-        <option value="withdraw">− 出金・取崩し（支払い・補填など）</option>
-        <option value="deposit">＋ 入金（月々の積立など）</option>
+        <option value="withdraw">− 出金・取崩し（支払い・補填）</option>
+        <option value="deposit">＋ 入金（積立）</option>
       </select>
     </div>
     <div class="form-group">
       <label class="form-label">金額 (円)</label>
-      <input type="number" id="txAmount" class="form-input" placeholder="例: 15000">
+      <input type="number" id="txAmount" class="form-input">
     </div>
     <div class="form-group">
-      <label class="form-label">引き出した目的・用途メモ</label>
-      <input type="text" id="txMemo" class="form-input" placeholder="例: 住宅ローン夏ボーナス払い、生活費補填">
+      <label class="form-label">目的・用途メモ</label>
+      <input type="text" id="txMemo" class="form-input" placeholder="例: 夏ボーナス払い、生活費補填">
     </div>
     <div style="display:flex; justify-content:flex-end; gap:6px;">
-      <button class="btn" onclick="closeModal('txModal')">キャンセル</button>
-      <button class="btn btn-primary" onclick="executeTx()">記録する</button>
+      <button class="btn" onclick="closeModal('txModal')">閉じる</button>
+      <button class="btn btn-primary" onclick="executeTx()">確定</button>
     </div>
   </div>
 </div>
 
-<!-- モーダル: 新規積立枠追加 -->
+<!-- モーダル: 積立枠追加/編集 -->
 <div class="modal" id="savingAddModal">
   <div class="modal-content">
-    <div style="font-weight:bold; margin-bottom:10px;">新規積立項目の追加</div>
+    <div style="font-weight:bold; margin-bottom:8px;" id="savModalTitle">積立枠の設定</div>
+    <input type="hidden" id="editSavId">
     <div class="form-group">
       <label class="form-label">積立名</label>
-      <input type="text" id="newSavName" class="form-input" placeholder="例: 住宅ローンボーナス払い">
+      <input type="text" id="newSavName" class="form-input">
     </div>
     <div class="form-group">
-      <label class="form-label">現在の初期残高 (円)</label>
-      <input type="number" id="newSavBal" class="form-input" value="0">
+      <label class="form-label">現在残高 (円)</label>
+      <input type="number" id="newSavBal" class="form-input">
     </div>
     <div style="display:flex; justify-content:flex-end; gap:6px;">
-      <button class="btn" onclick="closeModal('savingAddModal')">キャンセル</button>
-      <button class="btn btn-primary" onclick="createSaving()">追加</button>
+      <button class="btn" onclick="closeModal('savingAddModal')">閉じる</button>
+      <button class="btn btn-primary" onclick="saveSavingAccount()">保存</button>
     </div>
   </div>
 </div>
 
 <script>
-  // 11費目 予算・実績マスター
   const DEFAULT_CATEGORIES = [
     { id: 'c1', name: '固定費', budget: 90000, actual: 0 },
     { id: 'c2', name: '食費・外食費', budget: 35000, actual: 0 },
@@ -281,65 +284,51 @@
     { id: 'c11', name: '特別費', budget: 10000, actual: 0 }
   ];
 
-  let currentBudgets = JSON.parse(localStorage.getItem('app_categories_v3') || JSON.stringify(DEFAULT_CATEGORIES));
-  let budgetHistory = JSON.parse(localStorage.getItem('app_budget_history_v3') || '{}');
+  let currentBudgets = JSON.parse(localStorage.getItem('app_categories_v5') || JSON.stringify(DEFAULT_CATEGORIES));
+  let budgetHistory = JSON.parse(localStorage.getItem('app_budget_history_v5') || '{}');
 
-  // 入金タイミングごとのデータ構造
-  let incomeSections = JSON.parse(localStorage.getItem('app_income_sections_v3') || JSON.stringify([
+  let incomeSections = JSON.parse(localStorage.getItem('app_income_sections_v5') || JSON.stringify([
     {
-      id: 1,
-      title: "9/15 メークス給与入金",
-      amount: 131480,
+      id: 1, title: "9/15 メークス給料", amount: 131480,
       groups: [
         {
-          id: 101,
-          name: "ドコモ銀行",
-          type: "bank",
-          checked: false,
+          id: 101, name: "ドコモ銀行", type: "bank", checked: false, collapsed: false,
           subItems: [
-            { id: 1001, name: "ドコモ銀行へ入金", baseAmt: 30000, currAmt: 30000, checked: false },
-            { id: 1002, name: "目的別口座: 子供貯金振替", baseAmt: 5000, currAmt: 5000, checked: false }
+            { id: 1001, name: "口座へ入金", baseAmt: 30000, currAmt: 30000, checked: false },
+            { id: 1002, name: "子供貯金に振替", baseAmt: 5000, currAmt: 5000, checked: false }
           ]
         },
         {
-          id: 102,
-          name: "鹿児島銀行",
-          type: "bank",
-          checked: false,
+          id: 102, name: "鹿児島銀行", type: "bank", checked: false, collapsed: false,
           subItems: [
-            { id: 1003, name: "住宅ローン返済", baseAmt: 65000, currAmt: 65000, checked: false },
+            { id: 1003, name: "住宅ローン", baseAmt: 65000, currAmt: 65000, checked: false },
             { id: 1004, name: "修学旅行積立", baseAmt: 3000, currAmt: 1000, checked: false }
           ]
         }
       ]
     },
     {
-      id: 2,
-      title: "9/18 はま寿司給与入金",
-      amount: 52000,
+      id: 2, title: "9/18 はま寿司給料", amount: 52000,
       groups: [
         {
-          id: 201,
-          name: "生活費 現金袋分け",
-          type: "cash",
-          checked: false,
+          id: 201, name: "やりくり現金袋", type: "cash", checked: false, collapsed: false,
           subItems: [
-            { id: 2001, name: "食費・日用品現金", baseAmt: 35000, currAmt: 35000, checked: false },
-            { id: 2002, name: "予備・ガソリン現金", baseAmt: 15000, currAmt: 15000, checked: false }
+            { id: 2001, name: "食費・日用品 現金", baseAmt: 35000, currAmt: 35000, checked: false },
+            { id: 2002, name: "予備・ガソリン 現金", baseAmt: 15000, currAmt: 15000, checked: false }
           ]
         }
       ]
     }
   ]));
 
-  let savings = JSON.parse(localStorage.getItem('app_savings_v3') || JSON.stringify([
-    { id: 1, name: "住宅ローンボーナス払い積立", balance: 60000, logs: [] },
+  let savings = JSON.parse(localStorage.getItem('app_savings_v5') || JSON.stringify([
+    { id: 1, name: "住宅ローンボーナス積立", balance: 60000, logs: [] },
     { id: 2, name: "車検・自動車税積立", balance: 30000, logs: [] },
     { id: 3, name: "予備費・生活防衛", balance: 25000, logs: [] }
   ]));
 
-  let targetIncomeIdForGroup = null;
-  let targetGroupIdForSub = null;
+  let targetIncId = null;
+  let targetGrpId = null;
   let selectedSavId = null;
 
   function init() {
@@ -362,16 +351,14 @@
     document.getElementById(`tab-${t}`).classList.add('active');
   }
 
-  // ---------------- 1. 給与割り振り（入金タイミングごとのブロックレンダリング） ----------------
+  // ---------------- 1. 給与割り振り（開閉アコーディオン対応） ----------------
   function renderFlowSections() {
     const container = document.getElementById('incomeSectionsContainer');
     container.innerHTML = '';
 
     incomeSections.forEach((sec, sIdx) => {
       let secAlloc = 0;
-      sec.groups.forEach(g => {
-        g.subItems.forEach(item => secAlloc += item.currAmt);
-      });
+      sec.groups.forEach(g => g.subItems.forEach(i => secAlloc += i.currAmt));
       const secRem = sec.amount - secAlloc;
 
       const secEl = document.createElement('div');
@@ -380,51 +367,56 @@
       let groupsHtml = '';
       sec.groups.forEach((grp, gIdx) => {
         let grpTotal = 0;
-        grp.subItems.forEach(sub => grpTotal += sub.currAmt);
+        grp.subItems.forEach(s => grpTotal += s.currAmt);
 
-        const tagMap = {
-          bank: ['口座振替', 'tag-bank'],
-          cash: ['袋分け現金', 'tag-cash'],
-          save: ['積立入金', 'tag-save'],
-          chokin: ['貯金', 'tag-chokin']
-        };
+        const tagMap = { bank: ['口座振替','tag-bank'], cash: ['袋分け現金','tag-cash'], save: ['積立入金','tag-save'], chokin: ['貯金','tag-chokin'] };
         const [tagText, tagClass] = tagMap[grp.type] || ['移動', 'tag-bank'];
 
         let subsHtml = '';
         grp.subItems.forEach((sub, subIdx) => {
           subsHtml += `
             <div class="flow-sub-item ${sub.checked ? 'checked' : ''}">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <input type="checkbox" ${sub.checked ? 'checked' : ''} onchange="toggleSubCheck(${sIdx}, ${gIdx}, ${subIdx})" style="width:16px;height:16px;">
-                <span>${sub.name}</span>
+              <div style="display:flex; align-items:center; gap:6px; min-width:0;">
+                <input type="checkbox" ${sub.checked ? 'checked' : ''} onchange="toggleSubCheck(${sIdx}, ${gIdx}, ${subIdx})" style="width:16px;height:16px;flex-shrink:0;">
+                <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sub.name}</span>
               </div>
-              <div style="display:flex; align-items:center; gap:8px;">
+              <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
                 <div>
-                  <span class="amt-meta">基本: ${sub.baseAmt.toLocaleString()} 円</span>
-                  <input type="number" class="b-input" style="width:85px; font-weight:bold;" value="${sub.currAmt}" onchange="updateSubCurrAmt(${sIdx}, ${gIdx}, ${subIdx}, this.value)">
+                  <span class="amt-meta">基:${sub.baseAmt.toLocaleString()}</span>
+                  <input type="number" class="b-input" style="font-weight:bold;" value="${sub.currAmt}" onchange="updateSubCurrAmt(${sIdx}, ${gIdx}, ${subIdx}, this.value)">
                 </div>
+                <button class="btn btn-sm btn-edit" onclick="openEditSubModal(${sec.id}, ${grp.id}, ${sub.id})">✏️</button>
                 <button class="btn btn-sm" style="border:none; color:#94a3b8;" onclick="deleteSubItem(${sIdx}, ${gIdx}, ${subIdx})">×</button>
               </div>
             </div>
           `;
         });
 
+        // 開閉状態に応じた表示設定
+        const isCollapsed = !!grp.collapsed;
+        const subListStyle = isCollapsed ? 'display:none;' : 'display:block;';
+        const toggleIcon = isCollapsed ? '▼ 開く' : '▲ 隠す';
+
         groupsHtml += `
           <div class="flow-group-card">
             <div class="flow-group-header ${grp.checked ? 'checked' : ''}">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <input type="checkbox" ${grp.checked ? 'checked' : ''} onchange="toggleGroupCheck(${sIdx}, ${gIdx})" style="width:18px;height:18px;">
+              <div style="display:flex; align-items:center; gap:4px; min-width:0;">
+                <input type="checkbox" ${grp.checked ? 'checked' : ''} onchange="toggleGroupCheck(${sIdx}, ${gIdx})" style="width:16px;height:16px;flex-shrink:0;">
+                <button class="btn btn-sm" style="padding:1px 4px; font-size:9.5px; border-color:#cbd5e1;" onclick="toggleGroupCollapse(${sIdx}, ${gIdx})">${toggleIcon}</button>
                 <span class="flow-tag ${tagClass}">${tagText}</span>
-                <span style="font-size:13px; font-weight:bold;">${grp.name}</span>
+                <span style="font-size:12px; font-weight:bold; overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${grp.name}</span>
               </div>
-              <div style="display:flex; align-items:center; gap:6px;">
-                <span style="font-size:12px; font-weight:bold; color:var(--primary);">${grpTotal.toLocaleString()} 円</span>
+              <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
+                <span style="font-size:11.5px; font-weight:bold; color:var(--primary);">${grpTotal.toLocaleString()}円</span>
+                <button class="btn btn-sm btn-edit" onclick="openEditGroupModal(${sec.id}, ${grp.id})">✏️</button>
                 <button class="btn btn-sm" style="border:none; color:#94a3b8;" onclick="deleteGroup(${sIdx}, ${gIdx})">×</button>
               </div>
             </div>
-            ${subsHtml}
-            <div style="text-align:right; margin-top:6px;">
-              <button class="btn btn-sm" onclick="openAddSubModal(${sec.id}, ${grp.id})">＋ 小項目を追加</button>
+            <div id="subContainer-${sec.id}-${grp.id}" style="${subListStyle}">
+              ${subsHtml}
+              <div style="text-align:right; margin-top:4px;">
+                <button class="btn btn-sm" onclick="openAddSubModal(${sec.id}, ${grp.id})">＋ 小項目</button>
+              </div>
             </div>
           </div>
         `;
@@ -432,42 +424,32 @@
 
       secEl.innerHTML = `
         <div class="income-header">
-          <div class="income-meta-inputs">
-            <input type="text" value="${sec.title}" class="b-input" style="width:170px; text-align:left; font-weight:bold;" onchange="updateIncomeTitle(${sIdx}, this.value)">
-            <span style="font-size:12px; font-weight:bold;">入金額:</span>
-            <input type="number" value="${sec.amount}" class="b-input" style="width:105px; font-size:13px; font-weight:bold;" onchange="updateIncomeAmount(${sIdx}, this.value)">
-            <span style="font-size:12px;">円</span>
+          <div style="display:flex; align-items:center; gap:4px; min-width:0; flex-wrap:wrap;">
+            <span style="font-size:12px; font-weight:bold;">${sec.title}</span>
+            <span style="font-size:12px; font-weight:bold; color:var(--primary);">${sec.amount.toLocaleString()}円</span>
+            <button class="btn btn-sm btn-edit" onclick="openEditIncomeModal(${sec.id})">✏️ 編集</button>
           </div>
-          <div style="display:flex; gap:6px;">
+          <div style="display:flex; gap:4px; flex-shrink:0;">
             <button class="btn btn-sm" onclick="openAddGroupModal(${sec.id})">＋ 親項目</button>
-            <button class="btn btn-sm" style="border:none; color:#94a3b8;" onclick="deleteIncomeSection(${sIdx})">削除</button>
+            <button class="btn btn-sm" style="border:none; color:#94a3b8;" onclick="deleteIncomeSection(${sIdx})">×</button>
           </div>
         </div>
         ${groupsHtml}
         <div class="income-summary-row">
-          <span>この入金からの割当計: ${secAlloc.toLocaleString()} 円</span>
-          <span style="color: ${secRem < 0 ? 'var(--danger)' : 'var(--primary)'};">残余: ${secRem.toLocaleString()} 円</span>
+          <span>割当計: ${secAlloc.toLocaleString()} 円</span>
+          <span style="color:${secRem < 0 ? 'var(--danger)' : 'var(--primary)'};">残余: ${secRem.toLocaleString()} 円</span>
         </div>
       `;
       container.appendChild(secEl);
     });
 
-    localStorage.setItem('app_income_sections_v3', JSON.stringify(incomeSections));
+    localStorage.setItem('app_income_sections_v5', JSON.stringify(incomeSections));
   }
 
-  function updateIncomeTitle(sIdx, val) {
-    incomeSections[sIdx].title = val;
+  // 小項目の開閉トグル
+  function toggleGroupCollapse(sIdx, gIdx) {
+    incomeSections[sIdx].groups[gIdx].collapsed = !incomeSections[sIdx].groups[gIdx].collapsed;
     renderFlowSections();
-  }
-  function updateIncomeAmount(sIdx, val) {
-    incomeSections[sIdx].amount = parseInt(val, 10) || 0;
-    renderFlowSections();
-  }
-  function deleteIncomeSection(sIdx) {
-    if (confirm("この入金枠と配下のチェック項目をすべて削除しますか？")) {
-      incomeSections.splice(sIdx, 1);
-      renderFlowSections();
-    }
   }
 
   function toggleGroupCheck(sIdx, gIdx) {
@@ -487,79 +469,143 @@
     renderFlowSections();
   }
   function deleteGroup(sIdx, gIdx) {
-    if (confirm("親項目と内訳を削除しますか？")) {
+    if (confirm("親項目と内訳をすべて削除しますか？")) {
       incomeSections[sIdx].groups.splice(gIdx, 1);
       renderFlowSections();
     }
   }
+  function deleteIncomeSection(sIdx) {
+    if (confirm("この入金枠をすべて削除しますか？")) {
+      incomeSections.splice(sIdx, 1);
+      renderFlowSections();
+    }
+  }
   function resetAllFlowChecks() {
-    incomeSections.forEach(sec => {
-      sec.groups.forEach(g => {
-        g.checked = false;
-        g.subItems.forEach(s => s.checked = false);
-      });
-    });
+    incomeSections.forEach(s => s.groups.forEach(g => {
+      g.checked = false;
+      g.subItems.forEach(i => i.checked = false);
+    }));
     renderFlowSections();
   }
 
+  // 入金枠 追加/編集
   function openAddIncomeModal() {
+    document.getElementById('incModalTitle').innerText = '入金枠の追加';
+    document.getElementById('editIncomeId').value = '';
     document.getElementById('newIncTitle').value = '';
     document.getElementById('newIncAmount').value = '';
     document.getElementById('incomeModal').style.display = 'flex';
   }
-  function saveNewIncomeSection() {
+  function openEditIncomeModal(secId) {
+    const sec = incomeSections.find(s => s.id === secId);
+    document.getElementById('incModalTitle').innerText = '入金枠の修正';
+    document.getElementById('editIncomeId').value = sec.id;
+    document.getElementById('newIncTitle').value = sec.title;
+    document.getElementById('newIncAmount').value = sec.amount;
+    document.getElementById('incomeModal').style.display = 'flex';
+  }
+  function saveIncomeSection() {
+    const editId = document.getElementById('editIncomeId').value;
     const title = document.getElementById('newIncTitle').value.trim();
     const amount = parseInt(document.getElementById('newIncAmount').value, 10) || 0;
     if (!title) return;
-    incomeSections.push({
-      id: Date.now(),
-      title,
-      amount,
-      groups: []
-    });
+
+    if (editId) {
+      const sec = incomeSections.find(s => s.id === parseInt(editId, 10));
+      sec.title = title;
+      sec.amount = amount;
+    } else {
+      incomeSections.push({ id: Date.now(), title, amount, groups: [] });
+    }
     closeModal('incomeModal');
     renderFlowSections();
   }
 
+  // 親項目 追加/編集
   function openAddGroupModal(secId) {
-    targetIncomeIdForGroup = secId;
+    targetIncId = secId;
+    document.getElementById('grpModalTitle').innerText = '親項目（大項目）の追加';
+    document.getElementById('editGroupId').value = '';
     document.getElementById('groupName').value = '';
+    document.getElementById('groupType').value = 'bank';
+    document.getElementById('groupModal').style.display = 'flex';
+  }
+  function openEditGroupModal(secId, grpId) {
+    targetIncId = secId;
+    const sec = incomeSections.find(s => s.id === secId);
+    const grp = sec.groups.find(g => g.id === grpId);
+    document.getElementById('grpModalTitle').innerText = '親項目の修正';
+    document.getElementById('editGroupId').value = grp.id;
+    document.getElementById('groupName').value = grp.name;
+    document.getElementById('groupType').value = grp.type;
     document.getElementById('groupModal').style.display = 'flex';
   }
   function saveGroupItem() {
+    const editId = document.getElementById('editGroupId').value;
     const name = document.getElementById('groupName').value.trim();
     const type = document.getElementById('groupType').value;
     if (!name) return;
-    const sec = incomeSections.find(s => s.id === targetIncomeIdForGroup);
-    sec.groups.push({ id: Date.now(), name, type, checked: false, subItems: [] });
+
+    const sec = incomeSections.find(s => s.id === targetIncId);
+    if (editId) {
+      const grp = sec.groups.find(g => g.id === parseInt(editId, 10));
+      grp.name = name;
+      grp.type = type;
+    } else {
+      sec.groups.push({ id: Date.now(), name, type, checked: false, collapsed: false, subItems: [] });
+    }
     closeModal('groupModal');
     renderFlowSections();
   }
 
+  // 小項目 追加/編集
   function openAddSubModal(secId, grpId) {
-    targetIncomeIdForGroup = secId;
-    targetGroupIdForSub = grpId;
-    const sec = incomeSections.find(s => s.id === secId);
-    const grp = sec.groups.find(g => g.id === grpId);
-    document.getElementById('subModalTitle').innerText = `${grp.name} の小項目追加`;
+    targetIncId = secId;
+    targetGrpId = grpId;
+    document.getElementById('subModalTitle').innerText = '小項目の追加';
+    document.getElementById('editSubId').value = '';
     document.getElementById('subName').value = '';
     document.getElementById('subBaseAmt').value = '';
     document.getElementById('subCurrAmt').value = '';
     document.getElementById('subItemModal').style.display = 'flex';
   }
+  function openEditSubModal(secId, grpId, subId) {
+    targetIncId = secId;
+    targetGrpId = grpId;
+    const sec = incomeSections.find(s => s.id === secId);
+    const grp = sec.groups.find(g => g.id === grpId);
+    const sub = grp.subItems.find(i => i.id === subId);
+
+    document.getElementById('subModalTitle').innerText = '小項目の修正';
+    document.getElementById('editSubId').value = sub.id;
+    document.getElementById('subName').value = sub.name;
+    document.getElementById('subBaseAmt').value = sub.baseAmt;
+    document.getElementById('subCurrAmt').value = sub.currAmt;
+    document.getElementById('subItemModal').style.display = 'flex';
+  }
   function saveSubItem() {
+    const editId = document.getElementById('editSubId').value;
     const name = document.getElementById('subName').value.trim();
     const baseAmt = parseInt(document.getElementById('subBaseAmt').value, 10) || 0;
     const currAmt = parseInt(document.getElementById('subCurrAmt').value, 10) || baseAmt;
     if (!name) return;
-    const sec = incomeSections.find(s => s.id === targetIncomeIdForGroup);
-    const grp = sec.groups.find(g => g.id === targetGroupIdForSub);
-    grp.subItems.push({ id: Date.now(), name, baseAmt, currAmt, checked: false });
+
+    const sec = incomeSections.find(s => s.id === targetIncId);
+    const grp = sec.groups.find(g => g.id === targetGrpId);
+
+    if (editId) {
+      const sub = grp.subItems.find(i => i.id === parseInt(editId, 10));
+      sub.name = name;
+      sub.baseAmt = baseAmt;
+      sub.currAmt = currAmt;
+    } else {
+      grp.subItems.push({ id: Date.now(), name, baseAmt, currAmt, checked: false });
+    }
     closeModal('subItemModal');
     renderFlowSections();
   }
 
-  // ---------------- 2. 積立通帳（日付指定対応） ----------------
+  // ---------------- 2. 積立通帳マネージャー ----------------
   function renderSavings() {
     const box = document.getElementById('savingContainer');
     box.innerHTML = '';
@@ -576,12 +622,12 @@
           <div class="history-item">
             <span>${l.date} <b>${l.memo}</b></span>
             <span style="color:${l.type === 'deposit' ? 'var(--success)' : 'var(--danger)'}; font-weight:bold;">
-              ${l.type === 'deposit' ? '+' : '-'}${l.amt.toLocaleString()} 円
+              ${l.type === 'deposit' ? '+' : '-'}${l.amt.toLocaleString()}円
             </span>
           </div>
         `).join('');
       } else {
-        logsHtml = '<div style="color:#94a3b8; text-align:center;">まだ入出金履歴がありません</div>';
+        logsHtml = '<div style="color:#94a3b8; text-align:center;">履歴はありません</div>';
       }
 
       card.innerHTML = `
@@ -589,10 +635,11 @@
           <span class="saving-name">${s.name}</span>
           <span class="saving-bal">${s.balance.toLocaleString()} 円</span>
         </div>
-        <div style="display:flex; gap:6px; margin-top:8px;">
-          <button class="btn btn-sm btn-primary" onclick="openTxModal(${s.id}, 'withdraw')">− 引出・取崩し</button>
-          <button class="btn btn-sm" onclick="openTxModal(${s.id}, 'deposit')">＋ 積立入金</button>
-          <button class="btn btn-sm" onclick="toggleLog(${s.id})">📜 通帳履歴 (${s.logs ? s.logs.length : 0})</button>
+        <div style="display:flex; gap:4px; margin-top:6px; flex-wrap:wrap;">
+          <button class="btn btn-sm btn-primary" onclick="openTxModal(${s.id}, 'withdraw')">− 引出</button>
+          <button class="btn btn-sm" onclick="openTxModal(${s.id}, 'deposit')">＋ 積立</button>
+          <button class="btn btn-sm" onclick="toggleLog(${s.id})">📜 履歴 (${s.logs ? s.logs.length : 0})</button>
+          <button class="btn btn-sm btn-edit" onclick="openEditSavingModal(${s.id})">✏️ 修正</button>
           <button class="btn btn-sm" style="margin-left:auto; border:none; color:#94a3b8;" onclick="delSaving(${s.id})">×</button>
         </div>
         <div class="saving-history" id="log-${s.id}">
@@ -603,7 +650,7 @@
     });
 
     document.getElementById('totalSavingsSum').innerText = `${totalSum.toLocaleString()} 円`;
-    localStorage.setItem('app_savings_v3', JSON.stringify(savings));
+    localStorage.setItem('app_savings_v5', JSON.stringify(savings));
   }
 
   function toggleLog(id) {
@@ -615,7 +662,7 @@
     selectedSavId = id;
     const s = savings.find(x => x.id === id);
     document.getElementById('txTitle').innerText = `${s.name} の入出金`;
-    document.getElementById('txCurrent').innerText = `現在の実残金: ${s.balance.toLocaleString()} 円`;
+    document.getElementById('txCurrent').innerText = `実残金: ${s.balance.toLocaleString()} 円`;
     document.getElementById('txType').value = defaultType;
     document.getElementById('txAmount').value = '';
     document.getElementById('txMemo').value = '';
@@ -632,27 +679,47 @@
     if (amt <= 0) return alert('金額を正しく入力してください');
 
     if (type === 'withdraw') {
-      if (amt > s.balance && !confirm("残金を超えています。マイナス残高として記録しますか？")) return;
+      if (amt > s.balance && !confirm("残金を超えています。記録しますか？")) return;
       s.balance -= amt;
     } else {
       s.balance += amt;
     }
 
     if (!s.logs) s.logs = [];
-    s.logs.push({
-      date, type, amt, memo: memo || (type === 'deposit' ? '積立入金' : '引き出し')
-    });
+    s.logs.push({ date, type, amt, memo: memo || (type === 'deposit' ? '積立入金' : '引き出し') });
 
     closeModal('txModal');
     renderSavings();
   }
 
-  function openAddSavingModal() { document.getElementById('savingAddModal').style.display = 'flex'; }
-  function createSaving() {
+  function openAddSavingModal() {
+    document.getElementById('savModalTitle').innerText = '新規積立枠の追加';
+    document.getElementById('editSavId').value = '';
+    document.getElementById('newSavName').value = '';
+    document.getElementById('newSavBal').value = '0';
+    document.getElementById('savingAddModal').style.display = 'flex';
+  }
+  function openEditSavingModal(id) {
+    const s = savings.find(x => x.id === id);
+    document.getElementById('savModalTitle').innerText = '積立枠の修正';
+    document.getElementById('editSavId').value = s.id;
+    document.getElementById('newSavName').value = s.name;
+    document.getElementById('newSavBal').value = s.balance;
+    document.getElementById('savingAddModal').style.display = 'flex';
+  }
+  function saveSavingAccount() {
+    const editId = document.getElementById('editSavId').value;
     const name = document.getElementById('newSavName').value.trim();
     const balance = parseInt(document.getElementById('newSavBal').value, 10) || 0;
     if (!name) return;
-    savings.push({ id: Date.now(), name, balance, logs: [] });
+
+    if (editId) {
+      const s = savings.find(x => x.id === parseInt(editId, 10));
+      s.name = name;
+      s.balance = balance;
+    } else {
+      savings.push({ id: Date.now(), name, balance, logs: [] });
+    }
     closeModal('savingAddModal');
     renderSavings();
   }
@@ -663,7 +730,7 @@
     }
   }
 
-  // ---------------- 3. 家計集計・超過額・月別保存・推移 ----------------
+  // ---------------- 3. 家計集計 & 予算推移 ----------------
   function renderBudgets() {
     const box = document.getElementById('budgetCategoryList');
     box.innerHTML = '';
@@ -679,7 +746,7 @@
 
       const barColor = isOver ? 'var(--danger)' : (rate > 85 ? 'var(--warning)' : 'var(--primary)');
       const statusTag = isOver
-        ? `<span style="color:var(--danger);">(${Math.abs(diff).toLocaleString()}円 オーバー / ${rate}%)</span>`
+        ? `<span style="color:var(--danger);">(${Math.abs(diff).toLocaleString()}円 超 / ${rate}%)</span>`
         : `<span style="color:var(--success);">(残 ${diff.toLocaleString()}円 / ${rate}%)</span>`;
 
       const div = document.createElement('div');
@@ -693,9 +760,9 @@
           <div class="b-bar-fill" style="width: ${rate > 100 ? 100 : rate}%; background: ${barColor};"></div>
         </div>
         <div class="b-inputs">
-          <span style="font-size:11px; color:#64748b;">実績:</span>
+          <span style="font-size:10px; color:#64748b;">実績:</span>
           <input type="number" class="b-input" value="${cat.actual}" onchange="updateCatActual(${idx}, this.value)">
-          <span style="font-size:11px; color:#64748b; margin-left:6px;">基準予算:</span>
+          <span style="font-size:10px; color:#64748b; margin-left:4px;">基準:</span>
           <input type="number" class="b-input" value="${cat.budget}" onchange="updateCatBudget(${idx}, this.value)">
         </div>
       `;
@@ -708,14 +775,14 @@
     const diffEl = document.getElementById('budgetDiffTag');
     const totalDiff = totalBud - totalAct;
     if (totalDiff >= 0) {
-      diffEl.innerText = `全体残り ${totalDiff.toLocaleString()} 円`;
+      diffEl.innerText = `残 ${totalDiff.toLocaleString()} 円`;
       diffEl.style.color = 'var(--success)';
     } else {
-      diffEl.innerText = `全体 ${Math.abs(totalDiff).toLocaleString()} 円 オーバー`;
+      diffEl.innerText = `${Math.abs(totalDiff).toLocaleString()} 円 超過`;
       diffEl.style.color = 'var(--danger)';
     }
 
-    localStorage.setItem('app_categories_v3', JSON.stringify(currentBudgets));
+    localStorage.setItem('app_categories_v5', JSON.stringify(currentBudgets));
   }
 
   function updateCatActual(idx, val) {
@@ -731,9 +798,9 @@
     const ym = document.getElementById('budgetMonthPicker').value;
     if (!ym) return alert('年月を選択してください');
     budgetHistory[ym] = JSON.parse(JSON.stringify(currentBudgets));
-    localStorage.setItem('app_budget_history_v3', JSON.stringify(budgetHistory));
+    localStorage.setItem('app_budget_history_v5', JSON.stringify(budgetHistory));
     renderHistoryTable();
-    alert(`${ym} の家計集計データを保存しました`);
+    alert(`${ym} の集計を保存しました`);
   }
 
   function loadSelectedMonthBudget() {
@@ -748,12 +815,12 @@
     const table = document.getElementById('budgetHistoryTable');
     const months = Object.keys(budgetHistory).sort().slice(-3);
     if (months.length === 0) {
-      table.innerHTML = '<tr><td style="text-align:center; color:#94a3b8;">保存された過去月データがまだありません</td></tr>';
+      table.innerHTML = '<tr><td style="text-align:center; color:#94a3b8;">保存された過去データがありません</td></tr>';
       return;
     }
 
     let headerHtml = '<tr><th>費目</th>';
-    months.forEach(m => headerHtml += `<th>${m} 実績</th>`);
+    months.forEach(m => headerHtml += `<th>${m.slice(5)}月</th>`);
     headerHtml += '</tr>';
 
     let rowsHtml = '';
@@ -767,10 +834,10 @@
       rowsHtml += `</tr>`;
     });
 
-    rowsHtml += '<tr style="font-weight:bold; background:#f8fafc;"><td>総支出</td>';
+    rowsHtml += '<tr style="font-weight:bold; background:#f8fafc;"><td>総計</td>';
     months.forEach(m => {
       const sum = budgetHistory[m].reduce((acc, c) => acc + c.actual, 0);
-      rowsHtml += `<td>${sum.toLocaleString()} 円</td>`;
+      rowsHtml += `<td>${sum.toLocaleString()}</td>`;
     });
     rowsHtml += '</tr>';
 
