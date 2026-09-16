@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>家計・積立・給与割り振りマネージャー Pro</title>
+<title>家計・積立・給与割り振りマネージャー</title>
 <style>
   :root {
     --primary: #2563eb;
@@ -50,7 +50,6 @@
   .flow-group-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; margin: 6px; }
   .flow-group-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; margin-bottom: 4px; }
   .flow-group-header.checked { opacity: 0.5; text-decoration: line-through; }
-  .flow-sub-container { transition: max-height 0.2s ease; }
   .flow-sub-item { display: flex; align-items: center; justify-content: space-between; padding: 5px 0 5px 12px; border-bottom: 1px dashed #f8fafc; font-size: 11.5px; gap: 4px; }
   .flow-sub-item.checked { opacity: 0.45; text-decoration: line-through; }
   .amt-meta { font-size: 9px; color: #64748b; display: block; text-align: right; }
@@ -156,11 +155,11 @@
     <input type="hidden" id="editIncomeId">
     <div class="form-group">
       <label class="form-label">入金名称・日付</label>
-      <input type="text" id="newIncTitle" class="form-input" placeholder="例: 9/15 メークス給料">
+      <input type="text" id="newIncTitle" class="form-input" placeholder="例: 15日 本業給与">
     </div>
     <div class="form-group">
       <label class="form-label">入金額 (円)</label>
-      <input type="number" id="newIncAmount" class="form-input" placeholder="例: 131480">
+      <input type="number" id="newIncAmount" class="form-input" placeholder="例: 150000">
     </div>
     <div style="display:flex; justify-content:flex-end; gap:6px;">
       <button class="btn" onclick="closeModal('incomeModal')">閉じる</button>
@@ -176,7 +175,7 @@
     <input type="hidden" id="editGroupId">
     <div class="form-group">
       <label class="form-label">親項目名（大項目）</label>
-      <input type="text" id="groupName" class="form-input" placeholder="例: ドコモ銀行、鹿児島銀行">
+      <input type="text" id="groupName" class="form-input" placeholder="例: メイン口座、やりくり費袋">
     </div>
     <div class="form-group">
       <label class="form-label">種別</label>
@@ -201,15 +200,15 @@
     <input type="hidden" id="editSubId">
     <div class="form-group">
       <label class="form-label">小項目名（目的・内訳）</label>
-      <input type="text" id="subName" class="form-input" placeholder="例: 子供貯金、修学旅行積立">
+      <input type="text" id="subName" class="form-input" placeholder="例: 固定費引落、積立振替">
     </div>
     <div class="form-group">
       <label class="form-label">基本の金額 (円)</label>
-      <input type="number" id="subBaseAmt" class="form-input" placeholder="例: 3000">
+      <input type="number" id="subBaseAmt" class="form-input" placeholder="例: 10000">
     </div>
     <div class="form-group">
       <label class="form-label">今月の金額 (円)</label>
-      <input type="number" id="subCurrAmt" class="form-input" placeholder="例: 1000">
+      <input type="number" id="subCurrAmt" class="form-input" placeholder="例: 10000">
     </div>
     <div style="display:flex; justify-content:flex-end; gap:6px;">
       <button class="btn" onclick="closeModal('subItemModal')">閉じる</button>
@@ -240,7 +239,7 @@
     </div>
     <div class="form-group">
       <label class="form-label">目的・用途メモ</label>
-      <input type="text" id="txMemo" class="form-input" placeholder="例: 夏ボーナス払い、生活費補填">
+      <input type="text" id="txMemo" class="form-input" placeholder="例: 車検費用引き出し、月次積立">
     </div>
     <div style="display:flex; justify-content:flex-end; gap:6px;">
       <button class="btn" onclick="closeModal('txModal')">閉じる</button>
@@ -256,7 +255,7 @@
     <input type="hidden" id="editSavId">
     <div class="form-group">
       <label class="form-label">積立名</label>
-      <input type="text" id="newSavName" class="form-input">
+      <input type="text" id="newSavName" class="form-input" placeholder="例: 特別支出積立">
     </div>
     <div class="form-group">
       <label class="form-label">現在残高 (円)</label>
@@ -270,8 +269,9 @@
 </div>
 
 <script>
+  // 11費目 汎用デフォルト設定
   const DEFAULT_CATEGORIES = [
-    { id: 'c1', name: '固定費', budget: 90000, actual: 0 },
+    { id: 'c1', name: '固定費', budget: 80000, actual: 0 },
     { id: 'c2', name: '食費・外食費', budget: 35000, actual: 0 },
     { id: 'c3', name: '日用品費', budget: 10000, actual: 0 },
     { id: 'c4', name: '娯楽・趣味', budget: 8000, actual: 0 },
@@ -284,47 +284,46 @@
     { id: 'c11', name: '特別費', budget: 10000, actual: 0 }
   ];
 
-  let currentBudgets = JSON.parse(localStorage.getItem('app_categories_v5') || JSON.stringify(DEFAULT_CATEGORIES));
-  let budgetHistory = JSON.parse(localStorage.getItem('app_budget_history_v5') || '{}');
+  let currentBudgets = JSON.parse(localStorage.getItem('app_categories_share') || JSON.stringify(DEFAULT_CATEGORIES));
+  let budgetHistory = JSON.parse(localStorage.getItem('app_budget_history_share') || '{}');
 
-  let incomeSections = JSON.parse(localStorage.getItem('app_income_sections_v5') || JSON.stringify([
+  // 個人情報を完全に排した汎用初期データ
+  let incomeSections = JSON.parse(localStorage.getItem('app_income_sections_share') || JSON.stringify([
     {
-      id: 1, title: "9/15 メークス給料", amount: 131480,
+      id: 1, title: "15日 給与入金 (例)", amount: 150000,
       groups: [
         {
-          id: 101, name: "ドコモ銀行", type: "bank", checked: false, collapsed: false,
+          id: 101, name: "引落用メイン口座", type: "bank", checked: false, collapsed: false,
           subItems: [
-            { id: 1001, name: "口座へ入金", baseAmt: 30000, currAmt: 30000, checked: false },
-            { id: 1002, name: "子供貯金に振替", baseAmt: 5000, currAmt: 5000, checked: false }
+            { id: 1001, name: "家賃/住宅ローン", baseAmt: 60000, currAmt: 60000, checked: false },
+            { id: 1002, name: "光熱水費引落", baseAmt: 20000, currAmt: 20000, checked: false }
           ]
         },
         {
-          id: 102, name: "鹿児島銀行", type: "bank", checked: false, collapsed: false,
+          id: 102, name: "目的別貯金口座", type: "chokin", checked: false, collapsed: false,
           subItems: [
-            { id: 1003, name: "住宅ローン", baseAmt: 65000, currAmt: 65000, checked: false },
-            { id: 1004, name: "修学旅行積立", baseAmt: 3000, currAmt: 1000, checked: false }
+            { id: 1003, name: "将来用積立", baseAmt: 10000, currAmt: 10000, checked: false }
           ]
         }
       ]
     },
     {
-      id: 2, title: "9/18 はま寿司給料", amount: 52000,
+      id: 2, title: "25日 副収入・手当 (例)", amount: 50000,
       groups: [
         {
           id: 201, name: "やりくり現金袋", type: "cash", checked: false, collapsed: false,
           subItems: [
             { id: 2001, name: "食費・日用品 現金", baseAmt: 35000, currAmt: 35000, checked: false },
-            { id: 2002, name: "予備・ガソリン 現金", baseAmt: 15000, currAmt: 15000, checked: false }
+            { id: 2002, name: "予備費 現金", baseAmt: 15000, currAmt: 15000, checked: false }
           ]
         }
       ]
     }
   ]));
 
-  let savings = JSON.parse(localStorage.getItem('app_savings_v5') || JSON.stringify([
-    { id: 1, name: "住宅ローンボーナス積立", balance: 60000, logs: [] },
-    { id: 2, name: "車検・自動車税積立", balance: 30000, logs: [] },
-    { id: 3, name: "予備費・生活防衛", balance: 25000, logs: [] }
+  let savings = JSON.parse(localStorage.getItem('app_savings_share') || JSON.stringify([
+    { id: 1, name: "車検・税金積立 (例)", balance: 30000, logs: [] },
+    { id: 2, name: "緊急予備費 (例)", balance: 50000, logs: [] }
   ]));
 
   let targetIncId = null;
@@ -351,7 +350,7 @@
     document.getElementById(`tab-${t}`).classList.add('active');
   }
 
-  // ---------------- 1. 給与割り振り（開閉アコーディオン対応） ----------------
+  // ---------------- 1. 給与割り振り ----------------
   function renderFlowSections() {
     const container = document.getElementById('incomeSectionsContainer');
     container.innerHTML = '';
@@ -392,7 +391,6 @@
           `;
         });
 
-        // 開閉状態に応じた表示設定
         const isCollapsed = !!grp.collapsed;
         const subListStyle = isCollapsed ? 'display:none;' : 'display:block;';
         const toggleIcon = isCollapsed ? '▼ 開く' : '▲ 隠す';
@@ -443,15 +441,13 @@
       container.appendChild(secEl);
     });
 
-    localStorage.setItem('app_income_sections_v5', JSON.stringify(incomeSections));
+    localStorage.setItem('app_income_sections_share', JSON.stringify(incomeSections));
   }
 
-  // 小項目の開閉トグル
   function toggleGroupCollapse(sIdx, gIdx) {
     incomeSections[sIdx].groups[gIdx].collapsed = !incomeSections[sIdx].groups[gIdx].collapsed;
     renderFlowSections();
   }
-
   function toggleGroupCheck(sIdx, gIdx) {
     incomeSections[sIdx].groups[gIdx].checked = !incomeSections[sIdx].groups[gIdx].checked;
     renderFlowSections();
@@ -488,7 +484,6 @@
     renderFlowSections();
   }
 
-  // 入金枠 追加/編集
   function openAddIncomeModal() {
     document.getElementById('incModalTitle').innerText = '入金枠の追加';
     document.getElementById('editIncomeId').value = '';
@@ -521,7 +516,6 @@
     renderFlowSections();
   }
 
-  // 親項目 追加/編集
   function openAddGroupModal(secId) {
     targetIncId = secId;
     document.getElementById('grpModalTitle').innerText = '親項目（大項目）の追加';
@@ -558,7 +552,6 @@
     renderFlowSections();
   }
 
-  // 小項目 追加/編集
   function openAddSubModal(secId, grpId) {
     targetIncId = secId;
     targetGrpId = grpId;
@@ -605,7 +598,7 @@
     renderFlowSections();
   }
 
-  // ---------------- 2. 積立通帳マネージャー ----------------
+  // ---------------- 2. 積立通帳 ----------------
   function renderSavings() {
     const box = document.getElementById('savingContainer');
     box.innerHTML = '';
@@ -650,7 +643,7 @@
     });
 
     document.getElementById('totalSavingsSum').innerText = `${totalSum.toLocaleString()} 円`;
-    localStorage.setItem('app_savings_v5', JSON.stringify(savings));
+    localStorage.setItem('app_savings_share', JSON.stringify(savings));
   }
 
   function toggleLog(id) {
@@ -782,7 +775,7 @@
       diffEl.style.color = 'var(--danger)';
     }
 
-    localStorage.setItem('app_categories_v5', JSON.stringify(currentBudgets));
+    localStorage.setItem('app_categories_share', JSON.stringify(currentBudgets));
   }
 
   function updateCatActual(idx, val) {
@@ -798,7 +791,7 @@
     const ym = document.getElementById('budgetMonthPicker').value;
     if (!ym) return alert('年月を選択してください');
     budgetHistory[ym] = JSON.parse(JSON.stringify(currentBudgets));
-    localStorage.setItem('app_budget_history_v5', JSON.stringify(budgetHistory));
+    localStorage.setItem('app_budget_history_share', JSON.stringify(budgetHistory));
     renderHistoryTable();
     alert(`${ym} の集計を保存しました`);
   }
