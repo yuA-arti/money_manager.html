@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>家計・積立・給与割り振りマネージャー</title>
+<title>家計・積立・給与割り振りマネージャー Pro</title>
 <style>
   :root {
     --primary: #2563eb;
@@ -48,7 +48,7 @@
   .income-summary-row { padding: 6px 10px; background: #faf5ff; display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; border-top: 1px dashed var(--border); }
 
   .flow-group-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; margin: 6px; }
-  .flow-group-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; margin-bottom: 4px; }
+  .flow-group-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; margin-bottom: 4px; flex-wrap: wrap; gap: 4px; }
   .flow-group-header.checked { opacity: 0.5; text-decoration: line-through; }
   .flow-sub-item { display: flex; align-items: center; justify-content: space-between; padding: 5px 0 5px 12px; border-bottom: 1px dashed #f8fafc; font-size: 11.5px; gap: 4px; }
   .flow-sub-item.checked { opacity: 0.45; text-decoration: line-through; }
@@ -78,10 +78,11 @@
 
   /* モーダル */
   .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 100; padding: 10px; }
-  .modal-content { background: #fff; border-radius: 12px; padding: 14px; width: 100%; max-width: 330px; max-height: 90vh; overflow-y: auto; }
+  .modal-content { background: #fff; border-radius: 12px; padding: 14px; width: 100%; max-width: 360px; max-height: 90vh; overflow-y: auto; }
   .form-group { margin-bottom: 8px; }
   .form-label { font-size: 10.5px; color: #64748b; margin-bottom: 2px; display: block; }
   .form-input { width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
+  .report-textarea { width: 100%; height: 260px; font-size: 11px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-family: monospace; }
 </style>
 </head>
 <body>
@@ -124,7 +125,10 @@
         <span class="card-title" style="margin:0;">月:</span>
         <input type="month" id="budgetMonthPicker" class="b-input" style="width:110px;" onchange="loadSelectedMonthBudget()">
       </div>
-      <button class="btn btn-sm btn-primary" onclick="saveCurrentMonthBudget()">💾 今月を保存</button>
+      <div style="display:flex; gap:4px;">
+        <button class="btn btn-sm btn-edit" onclick="generateFPReport()">📑 FP診断シートを出力</button>
+        <button class="btn btn-sm btn-primary" onclick="saveCurrentMonthBudget()">💾 今月を保存</button>
+      </div>
     </div>
     <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:6px;">
       <div>
@@ -147,6 +151,37 @@
     <div class="card-title">過去月の支出推移比較 (直近3ヶ月)</div>
     <div style="overflow-x:auto;">
       <table class="history-table" id="budgetHistoryTable"></table>
+    </div>
+  </div>
+</div>
+
+<!-- モーダル: FP診断シート出力 -->
+<div class="modal" id="reportModal">
+  <div class="modal-content">
+    <div style="font-weight:bold; margin-bottom:6px;">📑 月次FP診断シート</div>
+    <p style="font-size:10.5px; color:#64748b; margin-bottom:8px;">「レポートをコピー」を押して、AIチャット欄にそのまま貼り付けるとFP診断を受けられます。</p>
+    <textarea id="reportTextarea" class="report-textarea" readonly></textarea>
+    <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:8px;">
+      <button class="btn" onclick="closeModal('reportModal')">閉じる</button>
+      <button class="btn btn-primary" onclick="copyFPReport()">📋 レポートをコピー</button>
+    </div>
+  </div>
+</div>
+
+<!-- モーダル: 親項目コピー・移動 -->
+<div class="modal" id="moveCopyModal">
+  <div class="modal-content">
+    <div style="font-weight:bold; margin-bottom:8px;" id="moveCopyTitle">項目のコピー / 移動</div>
+    <input type="hidden" id="moveSourceSecId">
+    <input type="hidden" id="moveSourceGrpId">
+    <div class="form-group">
+      <label class="form-label">移動/コピー先の入金枠</label>
+      <select id="moveTargetSecSelect" class="form-input"></select>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:12px;">
+      <button class="btn" onclick="closeModal('moveCopyModal')">キャンセル</button>
+      <button class="btn btn-edit" onclick="executeCopyGroup()">📋 コピーする</button>
+      <button class="btn btn-primary" onclick="executeMoveGroup()">➡️ 移動する</button>
     </div>
   </div>
 </div>
@@ -292,13 +327,11 @@
 </div>
 
 <script>
-  // 永続化キー（今後は変更せず固定）
   const KEY_CATEGORIES = 'app_user_categories';
   const KEY_HISTORY = 'app_user_budget_history';
   const KEY_INCOMES = 'app_user_income_sections';
   const KEY_SAVINGS = 'app_user_savings';
 
-  // 初期デフォルト費目
   const DEFAULT_CATEGORIES = [
     { id: 'c1', name: '固定費', budget: 80000, actual: 0 },
     { id: 'c2', name: '食費・外食費', budget: 35000, actual: 0 },
@@ -313,12 +346,10 @@
     { id: 'c11', name: '特別費', budget: 10000, actual: 0 }
   ];
 
-  // 以前の保存データがあれば自動救済・ロード
   let currentBudgets = JSON.parse(
     localStorage.getItem(KEY_CATEGORIES) ||
     localStorage.getItem('app_categories_share') ||
     localStorage.getItem('app_categories_v5') ||
-    localStorage.getItem('app_categories_v4') ||
     JSON.stringify(DEFAULT_CATEGORIES)
   );
 
@@ -326,14 +357,12 @@
     localStorage.getItem(KEY_HISTORY) ||
     localStorage.getItem('app_budget_history_share') ||
     localStorage.getItem('app_budget_history_v5') ||
-    localStorage.getItem('app_budget_history_v4') ||
     '{}'
   );
 
   let incomeSections = JSON.parse(
     localStorage.getItem(KEY_INCOMES) ||
     localStorage.getItem('app_income_sections_v5') ||
-    localStorage.getItem('app_income_sections_v4') ||
     localStorage.getItem('app_income_sections_share') ||
     JSON.stringify([
       {
@@ -353,7 +382,6 @@
   let savings = JSON.parse(
     localStorage.getItem(KEY_SAVINGS) ||
     localStorage.getItem('app_savings_v5') ||
-    localStorage.getItem('app_savings_v4') ||
     localStorage.getItem('app_savings_share') ||
     JSON.stringify([
       { id: 1, name: "特別支出積立 (例)", balance: 30000, logs: [] }
@@ -440,6 +468,7 @@
               </div>
               <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
                 <span style="font-size:11.5px; font-weight:bold; color:var(--primary);">${grpTotal.toLocaleString()}円</span>
+                <button class="btn btn-sm btn-edit" title="コピーまたは別の入金枠へ移動" onclick="openMoveCopyModal(${sec.id}, ${grp.id})">📋 複製/移動</button>
                 <button class="btn btn-sm btn-edit" onclick="openEditGroupModal(${sec.id}, ${grp.id})">✏️</button>
                 <button class="btn btn-sm" style="border:none; color:#94a3b8;" onclick="deleteGroup(${sIdx}, ${gIdx})">×</button>
               </div>
@@ -516,6 +545,74 @@
       g.subItems.forEach(i => i.checked = false);
     }));
     renderFlowSections();
+  }
+
+  // 親項目のコピー＆移動
+  function openMoveCopyModal(secId, grpId) {
+    document.getElementById('moveSourceSecId').value = secId;
+    document.getElementById('moveSourceGrpId').value = grpId;
+    
+    const sourceSec = incomeSections.find(s => s.id === secId);
+    const sourceGrp = sourceSec.groups.find(g => g.id === grpId);
+    document.getElementById('moveCopyTitle').innerText = `「${sourceGrp.name}」の複製 / 移動`;
+
+    const select = document.getElementById('moveTargetSecSelect');
+    select.innerHTML = '';
+    incomeSections.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.innerText = `${s.title} (${s.amount.toLocaleString()}円)`;
+      if (s.id === secId) opt.selected = true;
+      select.appendChild(opt);
+    });
+
+    document.getElementById('moveCopyModal').style.display = 'flex';
+  }
+
+  function executeCopyGroup() {
+    const srcSecId = parseInt(document.getElementById('moveSourceSecId').value, 10);
+    const srcGrpId = parseInt(document.getElementById('moveSourceGrpId').value, 10);
+    const targetSecId = parseInt(document.getElementById('moveTargetSecSelect').value, 10);
+
+    const srcSec = incomeSections.find(s => s.id === srcSecId);
+    const srcGrp = srcSec.groups.find(g => g.id === srcGrpId);
+    const targetSec = incomeSections.find(s => s.id === targetSecId);
+
+    // 深いコピー作成
+    const newGrp = JSON.parse(JSON.stringify(srcGrp));
+    newGrp.id = Date.now();
+    newGrp.name = (srcSecId === targetSecId) ? `${newGrp.name} (コピー)` : newGrp.name;
+    newGrp.checked = false;
+    newGrp.subItems.forEach((sub, idx) => {
+      sub.id = Date.now() + idx + 1;
+      sub.checked = false;
+    });
+
+    targetSec.groups.push(newGrp);
+    closeModal('moveCopyModal');
+    renderFlowSections();
+    alert(`「${srcGrp.name}」を【${targetSec.title}】へ複製しました`);
+  }
+
+  function executeMoveGroup() {
+    const srcSecId = parseInt(document.getElementById('moveSourceSecId').value, 10);
+    const srcGrpId = parseInt(document.getElementById('moveSourceGrpId').value, 10);
+    const targetSecId = parseInt(document.getElementById('moveTargetSecSelect').value, 10);
+
+    if (srcSecId === targetSecId) {
+      return alert("同じ入金枠への移動はできません。複製をご利用ください。");
+    }
+
+    const srcSec = incomeSections.find(s => s.id === srcSecId);
+    const grpIndex = srcSec.groups.findIndex(g => g.id === srcGrpId);
+    const grp = srcSec.groups.splice(grpIndex, 1)[0];
+
+    const targetSec = incomeSections.find(s => s.id === targetSecId);
+    targetSec.groups.push(grp);
+
+    closeModal('moveCopyModal');
+    renderFlowSections();
+    alert(`「${grp.name}」を【${targetSec.title}】へ移動しました`);
   }
 
   function openAddIncomeModal() {
@@ -757,7 +854,7 @@
     }
   }
 
-  // ---------------- 3. 家計集計（費目の自由追加・修正・削除） ----------------
+  // ---------------- 3. 家計集計 ----------------
   function renderBudgets() {
     const box = document.getElementById('budgetCategoryList');
     box.innerHTML = '';
@@ -825,7 +922,6 @@
     renderBudgets();
   }
 
-  // 費目の追加・編集・削除
   function openAddCategoryModal() {
     document.getElementById('catModalTitle').innerText = '費目の追加';
     document.getElementById('editCatIndex').value = '';
@@ -913,6 +1009,77 @@
     rowsHtml += '</tr>';
 
     table.innerHTML = headerHtml + rowsHtml;
+  }
+
+  // ---------------- 4. 月次FP診断シート出力 ----------------
+  function generateFPReport() {
+    const ym = document.getElementById('budgetMonthPicker').value || '当月';
+    let lines = [];
+    lines.push(`【${ym} 家計・資産フローFP診断シート】\n`);
+
+    // 1. 入金と振替
+    lines.push(`■ 1. 収入と振替配分`);
+    let totalIncome = 0;
+    let totalAlloc = 0;
+
+    incomeSections.forEach(sec => {
+      totalIncome += sec.amount;
+      lines.push(`・[入金] ${sec.title}: ${sec.amount.toLocaleString()}円`);
+      sec.groups.forEach(g => {
+        let gTotal = 0;
+        g.subItems.forEach(s => gTotal += s.currAmt);
+        totalAlloc += gTotal;
+        lines.push(`   └ ${g.name} (${gTotal.toLocaleString()}円)`);
+        g.subItems.forEach(s => {
+          lines.push(`       - ${s.name}: ${s.currAmt.toLocaleString()}円 (基準:${s.baseAmt.toLocaleString()}円)`);
+        });
+      });
+    });
+    lines.push(`  → 入金総額: ${totalIncome.toLocaleString()}円 / 振替合計: ${totalAlloc.toLocaleString()}円 / 差引手元残: ${(totalIncome - totalAlloc).toLocaleString()}円\n`);
+
+    // 2. 積立通帳
+    lines.push(`■ 2. 目的別積立状況`);
+    let totalSavBal = 0;
+    savings.forEach(s => {
+      totalSavBal += s.balance;
+      const lastLog = s.logs && s.logs.length > 0 ? s.logs[s.logs.length - 1] : null;
+      let logStr = "変動なし";
+      if (lastLog) {
+        logStr = `直近:${lastLog.date} ${lastLog.type === 'deposit' ? '+' : '-'}${lastLog.amt.toLocaleString()}円 (${lastLog.memo})`;
+      }
+      lines.push(`・${s.name}: 実残高 ${s.balance.toLocaleString()}円 [${logStr}]`);
+    });
+    lines.push(`  → 積立実残高 合計: ${totalSavBal.toLocaleString()}円\n`);
+
+    // 3. 家計集計
+    lines.push(`■ 3. 家計簿集計（紙ノート転記実績 vs 予算）`);
+    let totalBud = 0;
+    let totalAct = 0;
+    currentBudgets.forEach(cat => {
+      totalBud += cat.budget;
+      totalAct += cat.actual;
+      const diff = cat.budget - cat.actual;
+      const status = diff < 0 ? `▲${Math.abs(diff).toLocaleString()}円超過` : `残り${diff.toLocaleString()}円`;
+      lines.push(`・${cat.name}: 実績 ${cat.actual.toLocaleString()}円 / 予算 ${cat.budget.toLocaleString()}円 (${status})`);
+    });
+    const totalDiff = totalBud - totalAct;
+    lines.push(`  → 支出総計: ${totalAct.toLocaleString()}円 / 予算総計: ${totalBud.toLocaleString()}円 (${totalDiff < 0 ? `▲${Math.abs(totalDiff).toLocaleString()}円超過` : `残り${totalDiff.toLocaleString()}円`})\n`);
+
+    lines.push(`---`);
+    lines.push(`FPへの相談要望: 上記の資金フロー・積立状況・家計支出実績を踏まえ、今月の評価と来月に向けた予算配分や貯蓄ペースのアドバイスをお願いします。`);
+
+    document.getElementById('reportTextarea').value = lines.join('\n');
+    document.getElementById('reportModal').style.display = 'flex';
+  }
+
+  function copyFPReport() {
+    const text = document.getElementById('reportTextarea').value;
+    navigator.clipboard.writeText(text).then(() => {
+      alert("FP診断シートをコピーしました！このチャット欄に貼り付けて送信してください。");
+      closeModal('reportModal');
+    }).catch(() => {
+      alert("コピーに失敗しました。枠内のテキストを手動で選択してコピーしてください。");
+    });
   }
 
   function closeModal(id) { document.getElementById(id).style.display = 'none'; }
